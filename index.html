@@ -87,9 +87,30 @@
   #app .subgroup-head { display:flex; align-items:center; gap:8px; padding:10px 6px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
   #app .add-row { display:flex; gap:6px; margin:2px 0 10px; }
   #app .goal-row { display:flex; align-items:center; gap:10px; padding:12px 4px; }
+  #app .mobile-nav-btn { display:none; border:none; background:var(--chip); color:var(--fg); border-radius:9px; width:34px; height:34px; align-items:center; justify-content:center; flex-shrink:0; }
+  #app .pt-topbar { display:flex; align-items:flex-start; gap:10px; }
+  #app .pt-backdrop { display:none; position:fixed; inset:0; background:rgba(10,12,20,.45); z-index:55; opacity:0; pointer-events:none; transition:opacity .2s ease; }
   @media (max-width:900px) {
     #app .pt-shell { flex-direction:column; }
     #app .pt-sidebar { width:100%; position:static; max-height:none; }
+  }
+  @media (max-width:640px) {
+    #app .pt-shell { padding:10px; gap:0; border-radius:0; }
+    #app .pt-main { padding:16px; border-radius:14px; }
+    #app .mobile-nav-btn { display:flex; }
+    #app .pt-sidebar {
+      display:block; position:fixed; top:0; left:0; height:100vh; width:80%; max-width:280px;
+      border-radius:0 16px 16px 0; z-index:60; transform:translateX(-100%);
+      transition:transform .22s ease; box-shadow:0 0 0 rgba(0,0,0,0);
+    }
+    #app .pt-shell.nav-open .pt-sidebar { transform:translateX(0); box-shadow:8px 0 24px rgba(0,0,0,.25); }
+    #app .pt-shell.nav-open .pt-backdrop { display:block; opacity:1; pointer-events:auto; }
+    #app h1.pt-title { font-size:16px; }
+    #app p.pt-subtitle { font-size:12px; margin:0 0 14px; }
+    #app .cal-grid { gap:4px; }
+    #app .cal-cell { min-height:50px; padding:5px; border-radius:8px; }
+    #app .goal-row input[type="text"] { font-size:15px; }
+    #app .pt-backlog-grid { grid-template-columns:1fr !important; }
   }
 </style>
 
@@ -107,6 +128,7 @@ var CLUSTER_COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#6366F1
 var uiExpanded = { weekly:false, quarterSide:false, monthSide:false };
 var confirmDelete = {};
 var dragPayload = null;
+var mobileNavOpen = false;
 
 var TABS = [
   ['vision','Vision','target'],
@@ -130,7 +152,9 @@ var ICONS = {
   chevronRight: '<path d="M9 6l6 6-6 6"/>',
   starOutline: '<path d="M12 3l2.6 5.9 6.4.6-4.8 4.2 1.5 6.3L12 16.9 6.3 20l1.5-6.3-4.8-4.2 6.4-.6L12 3z"/>',
   starFill: '<path d="M12 3l2.6 5.9 6.4.6-4.8 4.2 1.5 6.3L12 16.9 6.3 20l1.5-6.3-4.8-4.2 6.4-.6L12 3z" fill="currentColor"/>',
-  grip: '<circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none"/>'
+  grip: '<circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none"/>',
+  menu: '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>',
+  close: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>'
 };
 function icon(name, size){
   size = size || 18;
@@ -409,7 +433,7 @@ function clusterDot(color){ return '<span class="dot" style="width:10px;height:1
 
 function sidebar(){
   var html = '<div class="pt-sidebar">';
-  html += '<div class="brand"><span class="brand-mark"></span>Planning</div>';
+  html += '<div class="brand"><span class="brand-mark"></span>Planning<button data-mobile-nav-close class="mobile-nav-btn" style="margin-left:auto;" title="Close menu">' + icon('close', 16) + '</button></div>';
   TABS.forEach(function(t){
     var active = state.selected.tab === t[0];
     html += '<button data-tab="' + t[0] + '" class="navrow' + (active ? ' active' : '') + '">' + icon(t[2], 17) + '<span>' + t[1] + '</span></button>';
@@ -697,7 +721,7 @@ function renderBacklog(){
     html += '<div style="padding:10px 16px;"><input type="text" data-new-backlog-input data-list="' + key + '" placeholder="' + placeholder + '" style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;"></div></div>';
     return html;
   }
-  var html = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">';
+  var html = '<div class="pt-backlog-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">';
   html += list('buy', 'Buy backlog', 'Add item and press Enter...');
   html += list('ideas', 'Idea backlog', 'Add idea and press Enter...');
   html += '</div>';
@@ -781,8 +805,10 @@ function render(){
   else if (state.selected.tab === 'clusters') body = renderClusters();
   else body = renderBacklog();
   var titleMap = {vision:'Vision', quarterly:'Quarterly goals', monthly:'Monthly overview', calendar:'Calendar', weekly:'Weekly tracker', clusters:'Clusters', backlog:'Backlog'};
-  var main = '<div class="pt-main"><h1 class="pt-title">' + titleMap[state.selected.tab] + '</h1><p class="pt-subtitle">Update a week and it rolls up through months and quarters automatically.</p>' + body + '</div>';
-  app.innerHTML = '<div class="pt-shell">' + sidebar() + main + '</div>';
+  var topbar = '<div class="pt-topbar"><button data-mobile-nav-toggle class="mobile-nav-btn" title="Open menu">' + icon('menu', 18) + '</button><div><h1 class="pt-title">' + titleMap[state.selected.tab] + '</h1><p class="pt-subtitle">Update a week and it rolls up through months and quarters automatically.</p></div></div>';
+  var main = '<div class="pt-main">' + topbar + body + '</div>';
+  var shellClass = 'pt-shell' + (mobileNavOpen ? ' nav-open' : '');
+  app.innerHTML = '<div class="' + shellClass + '">' + sidebar() + main + '<div class="pt-backdrop" data-mobile-nav-backdrop></div></div>';
 }
 
 function findTask(weekId, clusterId, taskId){
@@ -869,13 +895,16 @@ app.addEventListener('change', function(e){
 
 app.addEventListener('click', function(e){
   var el;
+  if ((el = e.target.closest('[data-mobile-nav-toggle]'))) { mobileNavOpen = true; render(); return; }
+  if ((el = e.target.closest('[data-mobile-nav-close]'))) { mobileNavOpen = false; render(); return; }
+  if ((el = e.target.closest('[data-mobile-nav-backdrop]'))) { mobileNavOpen = false; render(); return; }
   if ((el = e.target.closest('[data-export]'))) { exportBackup(); return; }
-  if ((el = e.target.closest('[data-tab]'))) { state.selected.tab = el.dataset.tab; render(); return; }
+  if ((el = e.target.closest('[data-tab]'))) { state.selected.tab = el.dataset.tab; mobileNavOpen = false; render(); return; }
   if ((el = e.target.closest('[data-toggle-expand]'))) { var k = el.dataset.toggleExpand; uiExpanded[k] = !uiExpanded[k]; render(); return; }
-  if ((el = e.target.closest('[data-goto-quarter]'))) { state.selected.quarterId = el.dataset.gotoQuarter; render(); return; }
-  if ((el = e.target.closest('[data-goto-month]'))) { state.selected.monthId = el.dataset.gotoMonth; render(); return; }
-  if ((el = e.target.closest('[data-goto-week]'))) { state.selected.weekId = el.dataset.gotoWeek; state.selected.tab = 'weekly'; render(); return; }
-  if ((el = e.target.closest('[data-goto-quarterly]'))) { state.selected.tab = 'quarterly'; render(); return; }
+  if ((el = e.target.closest('[data-goto-quarter]'))) { state.selected.quarterId = el.dataset.gotoQuarter; mobileNavOpen = false; render(); return; }
+  if ((el = e.target.closest('[data-goto-month]'))) { state.selected.monthId = el.dataset.gotoMonth; mobileNavOpen = false; render(); return; }
+  if ((el = e.target.closest('[data-goto-week]'))) { state.selected.weekId = el.dataset.gotoWeek; state.selected.tab = 'weekly'; mobileNavOpen = false; render(); return; }
+  if ((el = e.target.closest('[data-goto-quarterly]'))) { state.selected.tab = 'quarterly'; mobileNavOpen = false; render(); return; }
   if ((el = e.target.closest('[data-cal-prev]'))) { state.selected.calMonth -= 1; if (state.selected.calMonth < 0) { state.selected.calMonth = 11; state.selected.calYear -= 1; } render(); return; }
   if ((el = e.target.closest('[data-cal-next]'))) { state.selected.calMonth += 1; if (state.selected.calMonth > 11) { state.selected.calMonth = 0; state.selected.calYear += 1; } render(); return; }
   if ((el = e.target.closest('[data-cal-day]'))) { var ds = el.dataset.calDay; state.selected.calDay = (state.selected.calDay === ds) ? null : ds; render(); return; }
