@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planning Tracker</title>
 <style>
-  html, body { margin:0; padding:0; background:#EBEEF6; }
+  html, body { margin:0; padding:0; background:#EBEEF6; overflow-x:hidden; }
   @media (prefers-color-scheme: dark) {
     html, body { background:#15161C; }
   }
@@ -111,6 +111,12 @@
     #app .cal-cell { min-height:50px; padding:5px; border-radius:8px; }
     #app .goal-row input[type="text"] { font-size:15px; }
     #app .pt-backlog-grid { grid-template-columns:1fr !important; }
+    #app .task-row { flex-wrap:wrap; row-gap:6px; }
+    #app .task-row input[data-field="task-text"] { flex:1 1 100px; min-width:0; }
+    #app .add-row { flex-wrap:wrap; }
+    #app .add-row input[data-new-task-input] { flex:1 1 140px; min-width:0; }
+    #app .pt-cluster-label { width:96px !important; }
+    #app .pt-cluster-count { width:64px !important; font-size:11px !important; }
   }
 </style>
 
@@ -502,14 +508,14 @@ function renderVision(){
     var barTotal = counts.green + counts.yellow + counts.red || 1;
     html += '<div data-goto-quarterly="1" style="display:flex; align-items:center; gap:14px; padding:13px 16px; cursor:pointer; border-radius:8px;' + (i > 0 ? ' border-top:1px solid var(--border-soft);' : '') + '">';
     html += clusterDot(c.color);
-    html += '<div style="width:160px; font-size:13px; font-weight:600;">' + escapeHtml(c.name) + '</div>';
-    html += '<div style="flex:1; height:9px; border-radius:5px; overflow:hidden; display:flex; background:var(--none-bg);">';
+    html += '<div class="pt-cluster-label" style="width:160px; font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escapeHtml(c.name) + '</div>';
+    html += '<div style="flex:1; min-width:24px; height:9px; border-radius:5px; overflow:hidden; display:flex; background:var(--none-bg);">';
     if (counts.green) html += '<div style="width:' + (100*counts.green/barTotal) + '%; background:var(--green-strong);"></div>';
     if (counts.yellow) html += '<div style="width:' + (100*counts.yellow/barTotal) + '%; background:var(--yellow-strong);"></div>';
     if (counts.red) html += '<div style="width:' + (100*counts.red/barTotal) + '%; background:var(--red-strong);"></div>';
     html += '</div>';
     var total = counts.green + counts.yellow + counts.red;
-    html += '<div style="font-size:12px; color:var(--muted); width:100px; text-align:right;">' + (total ? total + ' logged' : 'no data yet') + '</div>';
+    html += '<div class="pt-cluster-count" style="font-size:12px; color:var(--muted); width:100px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + (total ? total + ' logged' : 'no data yet') + '</div>';
     html += '</div>';
   });
   html += '</div>';
