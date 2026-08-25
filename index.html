@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Tracker</title>
+</head>
+<body>
+<div id="app" class="pt-app">
+  <div style="padding:40px; text-align:center;">Loading planning system…</div>
+</div>
+
+<style>
+  #app.pt-app {
+    --page-bg:#EBEEF6; --card:#FFFFFF; --border:#E6E8F1; --border-soft:#EFF1F8;
+    --fg:#20232B; --muted:#8A8FA3; --chip:#F2F3F9; --chip-fg:#4B4F5E;
+    --accent:#2F6FE4; --accent-fg:#FFFFFF; --accent-soft:#E7EFFE;
+    --shadow: 0 1px 2px rgba(20,25,45,0.04), 0 8px 24px rgba(20,25,45,0.06);
+    --green-bg:#E1F0D3; --green-fg:#33630F; --green-strong:#6EA82C;
+    --yellow-bg:#FBEACB; --yellow-fg:#8A560C; --yellow-strong:#EFA531;
+    --red-bg:#FADBDB; --red-fg:#8C2323; --red-strong:#E15C5B;
+    --none-bg:#F0F1F7; --none-fg:#8A8FA3; --none-strong:#B7BACB;
+    --star:#EFA531;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color:var(--fg); display:block; width:100%;
+  }
+  @media (prefers-color-scheme: dark) {
+    #app.pt-app {
+      --page-bg:#15161C; --card:#1E2027; --border:#2C2E38; --border-soft:#262832;
+      --fg:#EDEEF3; --muted:#9A9EAF; --chip:#262832; --chip-fg:#C7C9D6;
+      --accent:#4C86F0; --accent-fg:#0E1116; --accent-soft:#1E2A44;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.22);
+      --green-bg:#1E3A0A; --green-fg:#C0DD97; --green-strong:#8FC24F;
+      --yellow-bg:#4A2C05; --yellow-fg:#FAC775; --yellow-strong:#EFA531;
+      --red-bg:#521717; --red-fg:#F7C1C1; --red-strong:#E15C5B;
+      --none-bg:#262832; --none-fg:#9A9EAF; --none-strong:#4B4E5C;
+      --star:#EFA531;
+    }
+  }
+  #app * { box-sizing:border-box; }
+  #app { line-height:1.55; }
+  #app button { font-family:inherit; cursor:pointer; }
+  #app input, #app textarea, #app select { font-family:inherit; color:var(--fg); }
+  #app input::placeholder, #app textarea::placeholder { color:var(--muted); }
+  #app .pt-shell { display:flex; gap:20px; width:100%; max-width:1440px; margin:0 auto; background:var(--page-bg); padding:20px; border-radius:20px; align-items:flex-start; }
+  #app .pt-sidebar { width:224px; flex-shrink:0; background:var(--card); border-radius:16px; padding:18px 12px; box-shadow:var(--shadow); position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; }
+  #app .pt-main { flex:1; min-width:0; background:var(--card); border-radius:16px; padding:26px 30px; box-shadow:var(--shadow); }
+  #app .brand { display:flex; align-items:center; gap:9px; padding:6px 8px 18px; font-weight:700; font-size:15px; }
+  #app .brand-mark { width:24px; height:24px; border-radius:7px; background:var(--accent); flex-shrink:0; }
+  #app .navrow { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border-radius:10px; border:none; background:transparent; color:var(--chip-fg); font-size:13px; font-weight:600; margin-bottom:2px; }
+  #app .navrow:hover { background:var(--chip); }
+  #app .navrow.active { background:var(--accent); color:var(--accent-fg); }
+  #app .side-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; padding:16px 10px 6px; }
+  #app .side-chip { display:block; width:100%; text-align:left; border:none; background:transparent; color:var(--chip-fg); font-size:13px; padding:7px 10px; border-radius:8px; margin-bottom:1px; }
+  #app .side-chip:hover { background:var(--chip); }
+  #app .side-chip.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  #app .card { background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+  #app .hairline { border-bottom:1px solid var(--border-soft); }
+  #app .chip { border:1px solid var(--border); background:var(--chip); color:var(--chip-fg); border-radius:20px; padding:7px 15px; font-size:13px; font-weight:600; }
+  #app .chip:hover { border-color:var(--accent); }
+  #app .chip.active { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+  #app .dot { width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  #app .pill { display:inline-flex; align-items:center; gap:6px; border-radius:20px; padding:4px 11px; font-size:12px; font-weight:600; }
+  #app .status-btn { border-radius:8px; padding:0 6px; height:26px; display:flex; align-items:center; justify-content:center; }
+  #app .star-btn { background:none; border:none; padding:2px; display:flex; align-items:center; flex-shrink:0; }
+  #app .task-row { border-radius:10px; border:2px solid transparent; }
+  #app .drag-handle { cursor:grab; color:var(--muted); display:flex; align-items:center; flex-shrink:0; }
+  #app .drag-handle:active { cursor:grabbing; }
+  #app .swatch { width:20px; height:20px; border-radius:50%; border:2px solid transparent; flex-shrink:0; }
+  #app .swatch.selected { border-color:var(--fg); }
+  #app *:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  #app h1.pt-title { font-size:19px; font-weight:700; margin:2px 0 3px; letter-spacing:-0.01em; }
+  #app p.pt-subtitle { font-size:13px; color:var(--muted); margin:0 0 20px; }
+  #app .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+  #app .cal-head { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; text-align:left; padding:0 2px 6px; }
+  #app .cal-cell { border-radius:10px; border:1px solid var(--border); background:var(--none-bg); min-height:78px; padding:8px; text-align:left; }
+  #app .cal-cell.has-tasks { background:var(--card); border-color:var(--accent-soft); }
+  #app .cal-cell.today { border-color:var(--accent); border-width:2px; }
+  #app .cal-cell.out { opacity:.4; }
+  #app .cal-nav-btn { width:30px; height:30px; border-radius:9px; background:var(--accent); color:var(--accent-fg); border:none; display:flex; align-items:center; justify-content:center; }
+  #app .subgroup-head { display:flex; align-items:center; gap:8px; padding:10px 6px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  #app .add-row { display:flex; gap:6px; margin:2px 0 10px; }
+  #app .goal-row { display:flex; align-items:center; gap:10px; padding:12px 4px; }
+  @media (max-width:900px) {
+    #app .pt-shell { flex-direction:column; }
+    #app .pt-sidebar { width:100%; position:static; max-height:none; }
+  }
+</style>
+
+<script>
+(function(){
+
+var STATUS_META = {
+  none:   { label:'No data',  fg:'var(--none-fg)',   bg:'var(--none-bg)',   strong:'var(--none-strong)' },
+  green:  { label:'On track', fg:'var(--green-fg)',  bg:'var(--green-bg)',  strong:'var(--green-strong)' },
+  yellow: { label:'Partial',  fg:'var(--yellow-fg)', bg:'var(--yellow-bg)', strong:'var(--yellow-strong)' },
+  red:    { label:'Blocked',  fg:'var(--red-fg)',    bg:'var(--red-bg)',    strong:'var(--red-strong)' }
+};
+var CYCLE = ['none','green','yellow','red'];
+var CLUSTER_COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#6366F1','#A97142','#64748B'];
+var uiExpanded = { weekly:false, quarterSide:false, monthSide:false };
+var confirmDelete = {};
+var dragPayload = null;
+
+var TABS = [
+  ['vision','Vision','target'],
+  ['quarterly','Quarterly','layers'],
+  ['monthly','Monthly','grid'],
+  ['calendar','Calendar','calendar'],
+  ['weekly','Weekly','checklist'],
+  ['clusters','Clusters','sliders'],
+  ['backlog','Backlog','archive']
+];
+
+var ICONS = {
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  layers: '<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  checklist: '<path d="M4 6h2"/><path d="M4 12h2"/><path d="M4 18h2"/><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/>',
+  archive: '<rect x="3" y="4" width="18" height="4" rx="1.5"/><path d="M5 8v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12.5h4"/>',
+  sliders: '<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.2"/>',
+  chevronLeft: '<path d="M15 6l-6 6 6 6"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
+  starOutline: '<path d="M12 3l2.6 5.9 6.4.6-4.8 4.2 1.5 6.3L12 16.9 6.3 20l1.5-6.3-4.8-4.2 6.4-.6L12 3z"/>',
+  starFill: '<path d="M12 3l2.6 5.9 6.4.6-4.8 4.2 1.5 6.3L12 16.9 6.3 20l1.5-6.3-4.8-4.2 6.4-.6L12 3z" fill="currentColor"/>',
+  grip: '<circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none"/>'
+};
+function icon(name, size){
+  size = size || 18;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS[name] + '</svg>';
+}
+
+function emptyTaskMap(clusters){ var m = {}; clusters.forEach(function(c){ m[c.id] = []; }); return m; }
+function emptyBridge(clusters){ var b = {}; clusters.forEach(function(c){ b[c.id] = {goals:[]}; }); return b; }
+
+function defaultState(){
+  var clusters = [
+    {id:'design', name:'Design', color:CLUSTER_COLORS[0], subclusters:[]},
+    {id:'social', name:'Social & facilitation', color:CLUSTER_COLORS[1], subclusters:[]},
+    {id:'lang', name:'Languages', color:CLUSTER_COLORS[2], subclusters:[]},
+    {id:'sport', name:'Sport', color:CLUSTER_COLORS[4], subclusters:[]},
+    {id:'apt', name:'Apartment', color:CLUSTER_COLORS[6], subclusters:[]},
+    {id:'job', name:'Job search & network', color:CLUSTER_COLORS[3], subclusters:[
+      {id:'sub_apply', name:'Job applications'},
+      {id:'sub_free', name:'Freelance projects'}
+    ]}
+  ];
+  var now = new Date();
+  return {
+    visions: [
+      {id:'v1', title:'Vision — Sep 2026', text:'Land a strategic / product design role at an agile B2B SaaS company, using the RepAIr case study to show research-to-shipped range. Freelance UX research and facilitation running alongside.'},
+      {id:'v2', title:'Vision — Sep 2027', text:'Recognised as a strategic design voice in the repair and recommerce space — an established content practice, a DACH network, and either a high-leverage in-house seat or a thriving independent practice.'}
+    ],
+    clusters: clusters,
+    quarters: [{id:'q1', label:'Q3 2026'}],
+    quarterBridge: { q1: emptyBridge(clusters) },
+    months: [{id:'m1', label:'August 2026', quarterId:'q1', weekIds:['w1','w2','w3','w4']}],
+    weeks: {
+      w1: {label:'Week 1', monthId:'m1', tasks: emptyTaskMap(clusters)},
+      w2: {label:'Week 2', monthId:'m1', tasks: emptyTaskMap(clusters)},
+      w3: {label:'Week 3', monthId:'m1', tasks: emptyTaskMap(clusters)},
+      w4: {label:'Week 4', monthId:'m1', tasks: emptyTaskMap(clusters)}
+    },
+    backlog: { buy: [], ideas: [] },
+    selected: { tab:'weekly', quarterId:'q1', monthId:'m1', weekId:'w1', calYear: now.getFullYear(), calMonth: now.getMonth(), calDay: null },
+    seq: 1
+  };
+}
+
+function normalizeState(s){
+  if (!s || typeof s !== 'object') return defaultState();
+  if (!Array.isArray(s.clusters) || !s.clusters.length) s.clusters = defaultState().clusters;
+  s.clusters.forEach(function(c, i){
+    if (!c.color) c.color = CLUSTER_COLORS[i % CLUSTER_COLORS.length];
+    if (!Array.isArray(c.subclusters)) c.subclusters = [];
+  });
+  if (!Array.isArray(s.visions)) {
+    var v = [];
+    if (s.visions && typeof s.visions === 'object') {
+      Object.keys(s.visions).forEach(function(k, idx){ v.push({ id: 'mig_v' + idx, title: 'Vision — ' + k, text: s.visions[k] || '' }); });
+    }
+    s.visions = v.length ? v : defaultState().visions;
+  }
+  if (!s.quarters || !s.quarters.length) s.quarters = defaultState().quarters;
+  if (!s.quarterBridge) s.quarterBridge = {};
+  s.quarters.forEach(function(q){
+    if (!s.quarterBridge[q.id]) s.quarterBridge[q.id] = {};
+    s.clusters.forEach(function(c){
+      var existingGoals = (s.quarterBridge[q.id][c.id] && Array.isArray(s.quarterBridge[q.id][c.id].goals)) ? s.quarterBridge[q.id][c.id].goals : [];
+      s.quarterBridge[q.id][c.id] = { goals: existingGoals };
+    });
+  });
+  if (!s.months || !s.months.length) s.months = defaultState().months;
+  if (!s.weeks) s.weeks = {};
+  Object.keys(s.weeks).forEach(function(wid){
+    if (typeof s.weeks[wid].autoCarried === 'undefined') s.weeks[wid].autoCarried = !(s.selected && s.selected.weekId === wid);
+    if (!s.weeks[wid].tasks) s.weeks[wid].tasks = {};
+    s.clusters.forEach(function(c){
+      if (!Array.isArray(s.weeks[wid].tasks[c.id])) s.weeks[wid].tasks[c.id] = [];
+      s.weeks[wid].tasks[c.id].forEach(function(t){
+        if (typeof t.starred === 'undefined') t.starred = false;
+        if (typeof t.date === 'undefined') t.date = '';
+        if (typeof t.subclusterId === 'undefined') t.subclusterId = '';
+        if (!t.target) t.target = 1;
+        if (typeof t.progress === 'undefined') t.progress = 0;
+      });
+    });
+  });
+  if (!s.backlog) s.backlog = {buy:[], ideas:[]};
+  if (!Array.isArray(s.backlog.buy)) s.backlog.buy = [];
+  if (!Array.isArray(s.backlog.ideas)) s.backlog.ideas = [];
+  s.backlog.buy.forEach(function(it){ if (typeof it.url === 'undefined') it.url = ''; });
+  s.backlog.ideas.forEach(function(it){ if (typeof it.url === 'undefined') it.url = ''; });
+  if (!s.selected) s.selected = defaultState().selected;
+  var now = new Date();
+  if (typeof s.selected.calYear === 'undefined') s.selected.calYear = now.getFullYear();
+  if (typeof s.selected.calMonth === 'undefined') s.selected.calMonth = now.getMonth();
+  if (typeof s.selected.calDay === 'undefined') s.selected.calDay = null;
+  if (!s.selected.tab) s.selected.tab = 'weekly';
+  if (typeof s.seq === 'undefined') s.seq = 1;
+  return s;
+}
+
+var state = null;
+var saveTimer = null;
+var app = document.getElementById('app');
+var storageOk = true;
+try { storageOk = !!(window && window.storage && typeof window.storage.get === 'function'); } catch(e){ storageOk = false; }
+
+var SUPABASE_URL = 'https://tumgwafxtsdgjkkuojka.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_zZunbEMhq-D1aXxtb6SuJQ_BR9weJQc';
+var supabaseStatus = 'checking';
+
+function supaHeaders(extra){
+  var h = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+  if (extra) for (var k in extra) h[k] = extra[k];
+  return h;
+}
+function supaLoad(){
+  return fetch(SUPABASE_URL + '/rest/v1/planner_state?id=eq.default&select=data', { headers: supaHeaders() })
+    .then(function(r){ if (!r.ok) throw new Error('bad status ' + r.status); return r.json(); })
+    .then(function(rows){ supabaseStatus = 'ok'; return (rows && rows[0]) ? rows[0].data : null; })
+    .catch(function(e){ supabaseStatus = 'error'; return undefined; });
+}
+function supaSave(){
+  return fetch(SUPABASE_URL + '/rest/v1/planner_state?on_conflict=id', {
+    method: 'POST',
+    headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify([{ id:'default', data: state, updated_at: new Date().toISOString() }])
+  }).then(function(r){ supabaseStatus = r.ok ? 'ok' : 'error'; render(); }).catch(function(){ supabaseStatus = 'error'; render(); });
+}
+
+function uid(){ state.seq += 1; return 't' + state.seq + '_' + Date.now().toString(36); }
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    supaSave();
+    if (storageOk) {
+      try { window.storage.set('planner-state', JSON.stringify(state), false).catch(function(){ storageOk = false; }); }
+      catch(e){ storageOk = false; }
+    }
+  }, 400);
+}
+
+function loadFromStorageFallback(){
+  if (!storageOk) { state = defaultState(); render(); return; }
+  try {
+    window.storage.get('planner-state').then(function(res){
+      try { state = res && res.value ? normalizeState(JSON.parse(res.value)) : defaultState(); }
+      catch(e){ state = defaultState(); }
+      render();
+    }).catch(function(){ state = defaultState(); render(); });
+  } catch(e){ state = defaultState(); render(); }
+}
+
+function init(){
+  supaLoad().then(function(data){
+    if (data) { state = normalizeState(data); render(); return; }
+    loadFromStorageFallback();
+  });
+}
+
+function worst(list){
+  if (list.indexOf('red') !== -1) return 'red';
+  if (list.indexOf('yellow') !== -1) return 'yellow';
+  if (list.indexOf('green') !== -1) return 'green';
+  return 'none';
+}
+function effectiveStatus(t){
+  if (t.target && t.target > 1) {
+    if (!t.progress) return 'none';
+    if (t.progress >= t.target) return 'green';
+    return 'yellow';
+  }
+  return t.status;
+}
+function sortForDisplay(tasks){
+  return tasks.slice().sort(function(a, b){
+    function score(t){ return effectiveStatus(t) === 'green' ? 2 : (t.starred ? 0 : 1); }
+    return score(a) - score(b);
+  });
+}
+
+function clusterById(id){ return state.clusters.filter(function(c){ return c.id === id; })[0]; }
+function monthForWeek(weekId){ return state.months.filter(function(m){ return m.weekIds.indexOf(weekId) !== -1; })[0]; }
+function nextWeekId(weekId){
+  var month = monthForWeek(weekId);
+  if (!month) return null;
+  var idx = month.weekIds.indexOf(weekId);
+  if (idx !== -1 && idx < month.weekIds.length - 1) return month.weekIds[idx + 1];
+  var mi = state.months.findIndex(function(m){ return m.id === month.id; });
+  if (mi !== -1 && mi < state.months.length - 1) {
+    var nextMonth = state.months[mi + 1];
+    if (nextMonth.weekIds.length) return nextMonth.weekIds[0];
+  }
+  return null;
+}
+
+function prevWeekId(weekId){
+  var month = monthForWeek(weekId);
+  if (!month) return null;
+  var idx = month.weekIds.indexOf(weekId);
+  if (idx > 0) return month.weekIds[idx - 1];
+  var mi = state.months.findIndex(function(m){ return m.id === month.id; });
+  if (mi > 0) {
+    var prevMonth = state.months[mi - 1];
+    if (prevMonth.weekIds.length) return prevMonth.weekIds[prevMonth.weekIds.length - 1];
+  }
+  return null;
+}
+function copyTaskTo(t, destWeek, destCluster){
+  state.weeks[destWeek].tasks[destCluster] = state.weeks[destWeek].tasks[destCluster] || [];
+  state.weeks[destWeek].tasks[destCluster].push({ id: uid(), text:t.text, status:t.status, starred:false, date:'', subclusterId:t.subclusterId, target:t.target, progress:t.progress, carriedFrom: true });
+}
+function ensureAutoCarry(weekId){
+  var week = state.weeks[weekId];
+  if (!week || week.autoCarried) return false;
+  week.autoCarried = true;
+  var prev = prevWeekId(weekId);
+  if (!prev || !state.weeks[prev]) return true;
+  state.clusters.forEach(function(c){
+    var prevTasks = state.weeks[prev].tasks[c.id] || [];
+    prevTasks.forEach(function(t){
+      if (effectiveStatus(t) === 'yellow' || effectiveStatus(t) === 'red') copyTaskTo(t, weekId, c.id);
+    });
+  });
+  return true;
+}
+
+function weekClusterStatus(weekId, clusterId){
+  var tasks = (state.weeks[weekId] && state.weeks[weekId].tasks[clusterId]) || [];
+  if (!tasks.length) return 'none';
+  return worst(tasks.map(effectiveStatus));
+}
+function monthClusterStatus(monthId, clusterId){
+  var month = state.months.filter(function(m){ return m.id === monthId; })[0];
+  if (!month) return 'none';
+  return worst(month.weekIds.map(function(wid){ return weekClusterStatus(wid, clusterId); }));
+}
+function quarterClusterStatus(quarterId, clusterId){
+  var months = state.months.filter(function(m){ return m.quarterId === quarterId; });
+  return worst(months.map(function(m){ return monthClusterStatus(m.id, clusterId); }));
+}
+function overallClusterCounts(clusterId){
+  var counts = {green:0, yellow:0, red:0, none:0};
+  Object.keys(state.weeks).forEach(function(wid){
+    (state.weeks[wid].tasks[clusterId] || []).forEach(function(t){ counts[effectiveStatus(t)] += 1; });
+  });
+  return counts;
+}
+function allTasksFlat(){
+  var out = [];
+  Object.keys(state.weeks).forEach(function(wid){
+    var week = state.weeks[wid];
+    state.clusters.forEach(function(c){
+      (week.tasks[c.id] || []).forEach(function(t){ out.push({ task:t, weekId:wid, clusterId:c.id, clusterName:c.name }); });
+    });
+  });
+  return out;
+}
+
+function pill(status){
+  var m = STATUS_META[status];
+  return '<span class="pill" style="background:' + m.bg + '; color:' + m.fg + ';"><span class="dot" style="background:' + m.strong + ';"></span>' + m.label + '</span>';
+}
+function dotButton(status, attrs){
+  var m = STATUS_META[status];
+  return '<button ' + attrs + ' class="status-btn" style="width:26px;border:1.5px solid ' + m.strong + '; background:' + m.bg + ';" title="' + m.label + ', click to change"><span class="dot" style="width:11px;height:11px;background:' + m.strong + ';"></span></button>';
+}
+function taskControl(t, weekId, clusterId){
+  if (t.target && t.target > 1) {
+    var st = effectiveStatus(t), mm = STATUS_META[st];
+    return '<button data-count-week="' + weekId + '" data-count-cluster="' + clusterId + '" data-count-task="' + t.id + '" class="status-btn" style="border:1.5px solid ' + mm.strong + '; background:' + mm.bg + '; color:' + mm.fg + '; font-size:11px; font-weight:700;" title="Click to log progress">' + t.progress + '/' + t.target + '</button>';
+  }
+  return dotButton(t.status, 'data-cycle-week="' + weekId + '" data-cycle-cluster="' + clusterId + '" data-cycle-task="' + t.id + '"');
+}
+function starButton(starred, attrs){
+  return '<button ' + attrs + ' class="star-btn" style="color:' + (starred ? 'var(--star)' : 'var(--muted)') + ';" title="' + (starred ? 'Unstar' : 'Star as priority') + '">' + icon(starred ? 'starFill' : 'starOutline', 16) + '</button>';
+}
+function clusterDot(color){ return '<span class="dot" style="width:10px;height:10px;background:' + color + ';"></span>'; }
+
+function sidebar(){
+  var html = '<div class="pt-sidebar">';
+  html += '<div class="brand"><span class="brand-mark"></span>Planning</div>';
+  TABS.forEach(function(t){
+    var active = state.selected.tab === t[0];
+    html += '<button data-tab="' + t[0] + '" class="navrow' + (active ? ' active' : '') + '">' + icon(t[2], 17) + '<span>' + t[1] + '</span></button>';
+  });
+  html += sidebarList(state.quarters, state.selected.quarterId, 'data-goto-quarter', 'Quarter', 'quarterSide', {placeholder:'+ Add quarter', action:'quarter'});
+  html += sidebarList(state.months, state.selected.monthId, 'data-goto-month', 'Month', 'monthSide', {placeholder:'+ Add month', action:'month'});
+  html += '<div class="side-label">Backup</div>';
+  html += '<div style="font-size:11px; padding:2px 10px 8px; color:' + (supabaseStatus === 'ok' ? 'var(--green-fg)' : (supabaseStatus === 'error' ? 'var(--red-fg)' : 'var(--muted)')) + ';">' + (supabaseStatus === 'ok' ? '● Synced to Supabase' : (supabaseStatus === 'error' ? '● Supabase unreachable — using local backup' : '● Checking Supabase…')) + '</div>';
+  html += '<button data-export style="width:100%; text-align:left; border:1px solid var(--border); background:transparent; color:var(--chip-fg); font-size:12px; padding:7px 10px; border-radius:8px; margin-bottom:6px;">Download backup (.json)</button>';
+  html += '<label style="display:block; width:100%; text-align:left; border:1px solid var(--border); background:transparent; color:var(--chip-fg); font-size:12px; padding:7px 10px; border-radius:8px; cursor:pointer;">Restore from file<input type="file" accept="application/json" data-import-file style="display:none;"></label>';
+  html += '<div style="font-size:10px; color:var(--muted); padding:6px 10px 0;">Save a backup regularly — this is the copy that survives publishing or switching devices.</div>';
+  html += '</div>';
+  return html;
+}
+function sidebarList(items, selectedId, gotoAttr, label, expandKey, addAction){
+  var selectedItem = items.filter(function(i){ return i.id === selectedId; })[0];
+  var rest = items.filter(function(i){ return i.id !== selectedId; }).slice().reverse();
+  var ordered = selectedItem ? [selectedItem].concat(rest) : rest;
+  var expanded = uiExpanded[expandKey];
+  var visible = expanded ? ordered : ordered.slice(0, 4);
+  var hiddenCount = ordered.length - visible.length;
+  var html = '<div class="side-label">' + label + '</div>';
+  visible.forEach(function(it){
+    var active = it.id === selectedId;
+    html += '<button ' + gotoAttr + '="' + it.id + '" class="side-chip' + (active ? ' active' : '') + '">' + it.label + '</button>';
+  });
+  if (hiddenCount > 0 || expanded) html += '<button data-toggle-expand="' + expandKey + '" class="side-chip" style="opacity:.65;">' + (expanded ? 'Show less' : ('+' + hiddenCount + ' earlier')) + '</button>';
+  html += '<input type="text" placeholder="' + addAction.placeholder + '" data-new-label data-add="' + addAction.action + '" style="width:100%; border:1px dashed var(--border); background:transparent; border-radius:8px; padding:6px 10px; font-size:12px; margin-top:4px;">';
+  return html;
+}
+function chipRow(items, selectedId, dataAttr, addAction, expandKey){
+  var selectedItem = items.filter(function(i){ return i.id === selectedId; })[0];
+  var rest = items.filter(function(i){ return i.id !== selectedId; }).slice().reverse();
+  var ordered = selectedItem ? [selectedItem].concat(rest) : rest;
+  var expanded = uiExpanded[expandKey];
+  var visible = expanded ? ordered : ordered.slice(0, 4);
+  var hiddenCount = ordered.length - visible.length;
+  var html = '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">';
+  visible.forEach(function(it){
+    var active = it.id === selectedId;
+    html += '<button ' + dataAttr + '="' + it.id + '" class="chip' + (active ? ' active' : '') + '">' + it.label + '</button>';
+  });
+  if (hiddenCount > 0 || expanded) html += '<button data-toggle-expand="' + expandKey + '" class="chip" style="opacity:.7;">' + (expanded ? 'Show less' : ('+' + hiddenCount + ' earlier')) + '</button>';
+  html += '<input type="text" placeholder="' + addAction.placeholder + '" data-new-label data-add="' + addAction.action + '" style="border:1px dashed var(--border); background:transparent; border-radius:20px; padding:6px 12px; font-size:13px; width:150px;">';
+  html += '</div>';
+  return html;
+}
+
+function renderVision(){
+  var html = '';
+  state.visions.forEach(function(v){
+    html += '<div class="card" style="padding:22px; margin-bottom:16px;">';
+    html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">';
+    html += '<input type="text" data-field="vision-title" data-vision="' + v.id + '" value="' + escapeHtml(v.title) + '" style="flex:1; border:none; background:transparent; font-size:14px; font-weight:700; padding:2px 0;">';
+    html += '<button data-del-vision="' + v.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 8px;">×</button>';
+    html += '</div>';
+    html += '<textarea data-field="vision-text" data-vision="' + v.id + '" rows="3" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:14px; background:transparent; resize:vertical;">' + escapeHtml(v.text) + '</textarea>';
+    html += '</div>';
+  });
+  html += '<input type="text" data-new-vision-input placeholder="+ Add another vision (e.g. Vision — Sep 2028) and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:10px; padding:10px 12px; font-size:13px; background:transparent; margin-bottom:26px;">';
+
+  html += '<div style="font-size:14px; font-weight:600; margin-bottom:12px;">Progress by cluster, across everything logged</div>';
+  html += '<div class="card" style="padding:6px 4px;">';
+  state.clusters.forEach(function(c, i){
+    var counts = overallClusterCounts(c.id);
+    var barTotal = counts.green + counts.yellow + counts.red || 1;
+    html += '<div data-goto-quarterly="1" style="display:flex; align-items:center; gap:14px; padding:13px 16px; cursor:pointer; border-radius:8px;' + (i > 0 ? ' border-top:1px solid var(--border-soft);' : '') + '">';
+    html += clusterDot(c.color);
+    html += '<div style="width:160px; font-size:13px; font-weight:600;">' + escapeHtml(c.name) + '</div>';
+    html += '<div style="flex:1; height:9px; border-radius:5px; overflow:hidden; display:flex; background:var(--none-bg);">';
+    if (counts.green) html += '<div style="width:' + (100*counts.green/barTotal) + '%; background:var(--green-strong);"></div>';
+    if (counts.yellow) html += '<div style="width:' + (100*counts.yellow/barTotal) + '%; background:var(--yellow-strong);"></div>';
+    if (counts.red) html += '<div style="width:' + (100*counts.red/barTotal) + '%; background:var(--red-strong);"></div>';
+    html += '</div>';
+    var total = counts.green + counts.yellow + counts.red;
+    html += '<div style="font-size:12px; color:var(--muted); width:100px; text-align:right;">' + (total ? total + ' logged' : 'no data yet') + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:12px; color:var(--muted); margin-top:10px;">Click a row to open its quarterly goals.</div>';
+  return html;
+}
+
+function renderQuarterly(){
+  var q = state.quarters.filter(function(x){ return x.id === state.selected.quarterId; })[0] || state.quarters[0];
+  var html = '';
+  state.clusters.forEach(function(c){
+    var goals = (state.quarterBridge[q.id][c.id] && state.quarterBridge[q.id][c.id].goals) || [];
+    var status = quarterClusterStatus(q.id, c.id);
+    html += '<div class="card" style="margin-bottom:16px; overflow:hidden; border-left:4px solid ' + c.color + ';">';
+    html += '<div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px;" class="hairline">';
+    html += '<div style="font-size:13px; font-weight:700;">' + escapeHtml(c.name) + '</div>' + pill(status) + '</div>';
+    html += '<div style="padding:6px 16px;">';
+    if (!goals.length) html += '<div style="font-size:12px; color:var(--muted); padding:10px 0;">No goals yet for this quarter.</div>';
+    goals.forEach(function(g, i){
+      html += '<div class="goal-row"' + (i < goals.length - 1 ? ' style="border-bottom:1px solid var(--border-soft);"' : '') + '>';
+      html += '<span style="width:9px;height:9px;border-radius:50%;background:' + c.color + '; flex-shrink:0;"></span>';
+      html += '<input type="text" data-field="goal-title" data-quarter="' + q.id + '" data-cluster="' + c.id + '" data-goal="' + g.id + '" value="' + escapeHtml(g.title) + '" placeholder="Goal..." style="flex:1; border:none; background:transparent; font-size:17px; font-weight:700; padding:4px 0;">';
+      html += '<button data-del-goal data-quarter="' + q.id + '" data-cluster="' + c.id + '" data-goal="' + g.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="padding:8px 16px 16px;">';
+    html += '<input type="text" data-new-goal-input data-quarter="' + q.id + '" data-cluster="' + c.id + '" placeholder="+ Add a goal for this quarter and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;">';
+    html += '</div></div>';
+  });
+  html += '<div style="font-size:12px; color:var(--muted); margin-top:6px;">Pick a quarter from the sidebar.</div>';
+  return html;
+}
+
+function renderMonthly(){
+  var m = state.months.filter(function(x){ return x.id === state.selected.monthId; })[0] || state.months[0];
+  var colW = 96;
+  var html = '<div class="card" style="overflow-x:auto;">';
+  html += '<div style="display:grid; grid-template-columns: 190px repeat(' + m.weekIds.length + ', ' + colW + 'px) 100px; padding:12px 16px; font-size:12px; color:var(--muted); font-weight:600; min-width:' + (190 + m.weekIds.length*colW + 100) + 'px;" class="hairline">';
+  html += '<div>Cluster</div>';
+  m.weekIds.forEach(function(wid){ html += '<div style="text-align:center;">' + (state.weeks[wid] ? state.weeks[wid].label : wid) + '</div>'; });
+  html += '<div style="text-align:right;">Month</div></div>';
+  state.clusters.forEach(function(c, i){
+    html += '<div style="display:grid; grid-template-columns: 190px repeat(' + m.weekIds.length + ', ' + colW + 'px) 100px; padding:10px 16px; align-items:center; min-width:' + (190 + m.weekIds.length*colW + 100) + 'px;' + (i < state.clusters.length - 1 ? ' border-bottom:1px solid var(--border-soft);' : '') + '">';
+    html += '<div style="font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;">' + clusterDot(c.color) + escapeHtml(c.name) + '</div>';
+    m.weekIds.forEach(function(wid){
+      var status = weekClusterStatus(wid, c.id);
+      html += '<div style="display:flex; justify-content:center;">' + dotButton(status, 'data-goto-week="' + wid + '"') + '</div>';
+    });
+    html += '<div style="text-align:right;">' + pill(monthClusterStatus(m.id, c.id)) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:12px; color:var(--muted); margin-top:10px;">Click any week\'s dot to open and edit that week. Pick a month from the sidebar.</div>';
+  return html;
+}
+
+function renderTaskRow(t, weekId, clusterId, subId){
+  var m = STATUS_META[effectiveStatus(t)];
+  var es = effectiveStatus(t);
+  var html = '<div class="task-row" draggable="false" style="padding:9px 10px; display:flex; gap:8px; align-items:center; background:' + m.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
+  html += '<span class="drag-handle" draggable="true" data-drag-task="' + t.id + '" data-drag-week="' + weekId + '" data-drag-cluster="' + clusterId + '" data-drag-sub="' + (subId||'') + '">' + icon('grip', 15) + '</span>';
+  html += taskControl(t, weekId, clusterId);
+  html += starButton(!!t.starred, 'data-star-week="' + weekId + '" data-star-cluster="' + clusterId + '" data-star-task="' + t.id + '"');
+  html += '<input type="text" data-field="task-text" data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" value="' + escapeHtml(t.text) + '" placeholder="Task..." style="flex:1; min-width:0; border:none; background:transparent; font-size:13px; font-weight:600; color:var(--fg); padding:2px 0;">';
+  if (t.carriedFrom) html += '<span title="Copied here from a previous week" style="font-size:10px; color:' + m.fg + '; opacity:.7; white-space:nowrap;">carried</span>';
+  var isToday = t.date === todayStr();
+  html += '<button data-toggle-today data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" title="' + (isToday ? 'Scheduled for today — click to remove' : 'Push to today') + '" style="border:1px solid ' + (isToday ? 'var(--accent)' : m.fg + '55') + '; background:' + (isToday ? 'var(--accent-soft)' : 'transparent') + '; color:' + (isToday ? 'var(--accent)' : m.fg) + '; font-size:11px; font-weight:700; padding:3px 7px; border-radius:6px; white-space:nowrap;">' + (isToday ? 'Today ✓' : '→ Today') + '</button>';
+  if (es === 'yellow' || es === 'red') {
+    html += '<button data-move-next data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" title="Copy to next week, keep this one here too" style="border:none; background:transparent; color:' + m.fg + '; opacity:.8; font-size:11px; font-weight:700; padding:2px 6px; white-space:nowrap;">→ copy next wk</button>';
+  }
+  html += '<button data-del-task data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; line-height:1; padding:2px 6px;">×</button>';
+  html += '</div>';
+  return html;
+}
+function addRow(weekId, clusterId, subId){
+  var html = '<div class="add-row" data-add-week="' + weekId + '" data-add-cluster="' + clusterId + '" data-add-sub="' + (subId||'') + '">';
+  html += '<input type="number" min="1" data-new-task-target placeholder="×1" title="Set >1 to track as a count, e.g. practice 2x this week" style="width:52px; border:1px dashed var(--border); border-radius:8px; padding:8px 4px; font-size:12px; background:transparent; text-align:center;">';
+  html += '<input type="text" data-new-task-input data-week="' + weekId + '" data-cluster="' + clusterId + '" data-sub="' + (subId||'') + '" placeholder="Add task and press Enter..." style="flex:1; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;">';
+  html += '</div>';
+  return html;
+}
+function groupDropAttrs(weekId, clusterId, subId){
+  return 'data-dropzone="group" data-drop-week="' + weekId + '" data-drop-cluster="' + clusterId + '" data-drop-sub="' + (subId||'') + '"';
+}
+function taskDropAttrs(weekId, clusterId, subId, taskId){
+  return 'data-dropzone="task" data-drop-week="' + weekId + '" data-drop-cluster="' + clusterId + '" data-drop-sub="' + (subId||'') + '" data-drop-before="' + taskId + '"';
+}
+
+function weekChipRow(items, selectedId){
+  var html = '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">';
+  items.forEach(function(it){
+    var active = it.id === selectedId;
+    html += '<button data-goto-week="' + it.id + '" class="chip' + (active ? ' active' : '') + '">' + it.label + '</button>';
+  });
+  html += '<input type="text" placeholder="+ Add week" data-new-label data-add="week" style="border:1px dashed var(--border); background:transparent; border-radius:20px; padding:6px 12px; font-size:13px; width:150px;">';
+  html += '</div>';
+  return html;
+}
+
+function renderWeekly(){
+  var month = state.months.filter(function(m){ return m.id === state.selected.monthId; })[0] || state.months[0];
+  var weeksInMonth = month.weekIds.map(function(wid){ return {id:wid, label: state.weeks[wid] ? state.weeks[wid].label : wid}; });
+  var wk = weeksInMonth.filter(function(w){ return w.id === state.selected.weekId; })[0] || weeksInMonth[0];
+  if (wk && wk.id !== state.selected.weekId) state.selected.weekId = wk.id;
+  if (wk && ensureAutoCarry(wk.id)) scheduleSave();
+  var html = '<div style="font-size:12px; color:var(--muted); margin-bottom:8px;">' + escapeHtml(month.label) + '</div>';
+  html += weekChipRow(weeksInMonth, wk ? wk.id : null);
+
+  var todays = allTasksFlat().filter(function(x){ return x.task.date === todayStr(); });
+  var n = new Date();
+  html += '<div class="card" data-dropzone="today" style="padding:14px 16px; margin-bottom:18px; border:2px dashed var(--accent-soft);">';
+  html += '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;"><div style="font-size:13px; font-weight:700;">Today — ' + MONTH_NAMES[n.getMonth()] + ' ' + n.getDate() + '</div><div style="font-size:11px; color:var(--muted);">Drag a task\'s grip handle here to schedule it</div></div>';
+  if (!todays.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 2px 2px;">Nothing scheduled for today yet.</div>';
+  todays.forEach(function(x){
+    var t = x.task, sm = STATUS_META[effectiveStatus(t)], cl = clusterById(x.clusterId);
+    html += '<div class="task-row" style="padding:8px 10px; display:flex; gap:8px; align-items:center; background:' + sm.bg + '; margin-bottom:6px;">';
+    html += taskControl(t, x.weekId, x.clusterId);
+    html += '<div style="flex:1; font-size:13px; font-weight:600; color:var(--fg);">' + escapeHtml(t.text) + '</div>';
+    html += '<span style="font-size:11px; color:' + (cl ? cl.color : 'var(--muted)') + '; font-weight:600;">' + x.clusterName + '</span>';
+    html += '<button data-unschedule data-week="' + x.weekId + '" data-cluster="' + x.clusterId + '" data-task="' + t.id + '" title="Remove from today" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  var week = state.weeks[wk.id];
+  if (!week) { return html + '<div style="color:var(--muted); font-size:13px;">No weeks yet — add one above.</div>'; }
+
+  state.clusters.forEach(function(c){
+    var tasks = week.tasks[c.id] || [];
+    var status = weekClusterStatus(wk.id, c.id);
+    html += '<div class="card" style="margin-bottom:14px; overflow:hidden; border-left:4px solid ' + c.color + ';">';
+    html += '<div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px;" class="hairline">';
+    html += '<div style="font-size:13px; font-weight:700;">' + escapeHtml(c.name) + '</div>' + pill(status) + '</div>';
+    html += '<div style="padding:10px;">';
+
+    if (c.subclusters.length) {
+      var general = sortForDisplay(tasks.filter(function(t){ return !t.subclusterId; }));
+      html += '<div ' + groupDropAttrs(wk.id, c.id, '') + '>';
+      html += '<div class="subgroup-head">General</div>';
+      general.forEach(function(t){ html += renderTaskRow(t, wk.id, c.id, ''); });
+      html += addRow(wk.id, c.id, '');
+      html += '</div>';
+      c.subclusters.forEach(function(sc){
+        var subTasks = sortForDisplay(tasks.filter(function(t){ return t.subclusterId === sc.id; }));
+        var subStatus = subTasks.length ? worst(subTasks.map(effectiveStatus)) : 'none';
+        html += '<div ' + groupDropAttrs(wk.id, c.id, sc.id) + '>';
+        html += '<div class="subgroup-head">' + escapeHtml(sc.name) + ' ' + pill(subStatus) + '</div>';
+        subTasks.forEach(function(t){ html += renderTaskRow(t, wk.id, c.id, sc.id); });
+        html += addRow(wk.id, c.id, sc.id);
+        html += '</div>';
+      });
+    } else {
+      html += '<div ' + groupDropAttrs(wk.id, c.id, '') + '>';
+      sortForDisplay(tasks).forEach(function(t){ html += renderTaskRow(t, wk.id, c.id, ''); });
+      html += addRow(wk.id, c.id, '');
+      html += '</div>';
+    }
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderClusters(){
+  var html = '';
+  state.clusters.forEach(function(c){
+    html += '<div class="card" style="padding:16px; margin-bottom:14px;">';
+    html += '<div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">';
+    html += clusterDot(c.color);
+    html += '<input type="text" data-field="cluster-name" data-cluster="' + c.id + '" value="' + escapeHtml(c.name) + '" style="flex:1; border:none; background:transparent; font-size:14px; font-weight:700; padding:2px 0;">';
+    var confirming = !!confirmDelete['cluster_' + c.id];
+    html += '<button data-del-cluster="' + c.id + '" style="border:1px solid var(--border); background:transparent; color:' + (confirming ? 'var(--red-fg)' : 'var(--muted)') + '; font-size:12px; padding:5px 10px; border-radius:8px;">' + (confirming ? 'Confirm delete?' : 'Delete') + '</button>';
+    html += '</div>';
+    html += '<div style="display:flex; gap:8px; margin-bottom:14px;">';
+    CLUSTER_COLORS.forEach(function(col){ html += '<button data-set-cluster-color data-cluster="' + c.id + '" data-color="' + col + '" class="swatch' + (c.color === col ? ' selected' : '') + '" style="background:' + col + ';"></button>'; });
+    html += '</div>';
+    html += '<div style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:700; margin-bottom:8px;">Subclusters</div>';
+    html += '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">';
+    c.subclusters.forEach(function(sc){
+      html += '<span style="display:inline-flex; align-items:center; gap:4px; background:var(--chip); border-radius:16px; padding:4px 6px 4px 12px; font-size:12px;">';
+      html += '<input type="text" data-field="subcluster-name" data-cluster="' + c.id + '" data-subcluster="' + sc.id + '" value="' + escapeHtml(sc.name) + '" style="border:none; background:transparent; font-size:12px; width:' + Math.max(60, sc.name.length*7) + 'px;">';
+      html += '<button data-del-subcluster data-cluster="' + c.id + '" data-subcluster="' + sc.id + '" style="border:none; background:transparent; color:var(--muted); font-size:14px; padding:0 4px;">×</button>';
+      html += '</span>';
+    });
+    html += '</div>';
+    html += '<input type="text" data-new-subcluster-input data-cluster="' + c.id + '" placeholder="+ Add subcluster and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:7px 10px; font-size:12px; background:transparent;">';
+    html += '</div>';
+  });
+  html += '<input type="text" data-new-cluster-input placeholder="+ Add cluster and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:10px; padding:10px 12px; font-size:13px; background:transparent;">';
+  return html;
+}
+
+function renderBacklog(){
+  function list(key, title, placeholder){
+    var items = state.backlog[key];
+    var html = '<div class="card" style="padding:0; overflow:hidden;">';
+    html += '<div style="padding:13px 16px; font-size:13px; font-weight:600;" class="hairline">' + title + '</div>';
+    items.forEach(function(it, idx){
+      html += '<div style="display:flex; flex-direction:column; gap:4px; padding:10px 16px;' + (idx < items.length ? ' border-bottom:1px solid var(--border-soft);' : '') + '">';
+      html += '<div style="display:flex; align-items:center; gap:10px;">';
+      html += '<button data-toggle-backlog data-list="' + key + '" data-item="' + it.id + '" style="width:18px; height:18px; border-radius:5px; border:1.5px solid var(--green-strong); background:' + (it.done ? 'var(--green-strong)' : 'transparent') + '; flex-shrink:0;"></button>';
+      html += '<div style="flex:1; font-size:13px; font-weight:500;' + (it.done ? ' text-decoration:line-through; color:var(--muted);' : '') + '">' + escapeHtml(it.text) + '</div>';
+      if (it.url) html += '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); font-weight:600; white-space:nowrap;">Open ↗</a>';
+      html += '<button data-del-backlog data-list="' + key + '" data-item="' + it.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
+      html += '</div>';
+      html += '<input type="text" data-field="backlog-url" data-list="' + key + '" data-item="' + it.id + '" value="' + escapeHtml(it.url) + '" placeholder="+ link" style="margin-left:28px; border:none; background:transparent; font-size:11px; color:var(--muted);">';
+      html += '</div>';
+    });
+    html += '<div style="padding:10px 16px;"><input type="text" data-new-backlog-input data-list="' + key + '" placeholder="' + placeholder + '" style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;"></div></div>';
+    return html;
+  }
+  var html = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">';
+  html += list('buy', 'Buy backlog', 'Add item and press Enter...');
+  html += list('ideas', 'Idea backlog', 'Add idea and press Enter...');
+  html += '</div>';
+  return html;
+}
+
+var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DAY_NAMES = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+function dateStr(y,m,d){ return y + '-' + pad2(m+1) + '-' + pad2(d); }
+function todayStr(){ var n = new Date(); return dateStr(n.getFullYear(), n.getMonth(), n.getDate()); }
+
+function renderCalendar(){
+  var y = state.selected.calYear, m = state.selected.calMonth;
+  var first = new Date(y, m, 1);
+  var startOffset = (first.getDay() + 6) % 7;
+  var gridStart = new Date(y, m, 1 - startOffset);
+  var todaysDate = todayStr();
+  var flat = allTasksFlat();
+
+  var html = '<div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:18px;">';
+  html += '<button data-cal-prev class="cal-nav-btn">' + icon('chevronLeft', 16) + '</button>';
+  html += '<div style="font-size:15px; font-weight:700; min-width:160px; text-align:center;">' + MONTH_NAMES[m] + ' ' + y + '</div>';
+  html += '<button data-cal-next class="cal-nav-btn">' + icon('chevronRight', 16) + '</button>';
+  html += '</div>';
+  html += '<div class="cal-grid" style="margin-bottom:6px;">';
+  DAY_NAMES.forEach(function(d){ html += '<div class="cal-head">' + d + '</div>'; });
+  html += '</div>';
+  html += '<div class="cal-grid">';
+  for (var i = 0; i < 42; i++) {
+    var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+    var ds = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
+    var inMonth = d.getMonth() === m;
+    var dayTasks = flat.filter(function(x){ return x.task.date === ds; });
+    var cls = 'cal-cell' + (dayTasks.length > 0 ? ' has-tasks' : '') + (ds === todaysDate ? ' today' : '') + (!inMonth ? ' out' : '');
+    html += '<button data-cal-day="' + ds + '" class="' + cls + '" style="text-align:left;">';
+    html += '<div style="font-size:13px; font-weight:700;">' + pad2(d.getDate()) + '</div>';
+    html += '<div style="font-size:11px; color:' + (dayTasks.length > 0 ? 'var(--accent)' : 'var(--muted)') + '; font-weight:600; margin-top:4px;">' + dayTasks.length + (dayTasks.length === 1 ? ' task' : ' tasks') + '</div>';
+    html += '</button>';
+  }
+  html += '</div>';
+
+  var selDay = state.selected.calDay;
+  if (selDay) {
+    var dayTasks2 = flat.filter(function(x){ return x.task.date === selDay; });
+    html += '<div class="card" style="margin-top:20px; overflow:hidden;">';
+    html += '<div style="padding:13px 16px; font-size:13px; font-weight:700;" class="hairline">' + selDay + '</div>';
+    html += '<div style="padding:10px;">';
+    if (!dayTasks2.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 6px 12px;">Nothing scheduled yet.</div>';
+    dayTasks2.forEach(function(x){
+      var t = x.task, sm = STATUS_META[effectiveStatus(t)], cl = clusterById(x.clusterId);
+      html += '<div class="task-row" style="padding:9px 10px; display:flex; gap:8px; align-items:center; background:' + sm.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
+      html += taskControl(t, x.weekId, x.clusterId);
+      html += starButton(!!t.starred, 'data-star-week="' + x.weekId + '" data-star-cluster="' + x.clusterId + '" data-star-task="' + t.id + '"');
+      html += '<div style="flex:1; font-size:13px; font-weight:600; color:var(--fg);">' + escapeHtml(t.text) + '</div>';
+      html += '<span style="font-size:11px; color:' + (cl ? cl.color : 'var(--muted)') + '; font-weight:600;">' + x.clusterName + '</span>';
+      html += '<button data-del-task data-week="' + x.weekId + '" data-cluster="' + x.clusterId + '" data-task="' + t.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; line-height:1; padding:2px 6px;">×</button>';
+      html += '</div>';
+    });
+    html += '<div style="display:flex; gap:8px; margin-top:4px;">';
+    html += '<select data-cal-cluster style="border:1px solid var(--border); border-radius:8px; padding:7px 8px; font-size:12px; background:transparent;">';
+    state.clusters.forEach(function(c){ html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>'; });
+    html += '</select>';
+    html += '<input type="text" data-cal-new-task placeholder="Add task for this day and press Enter..." style="flex:1; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;">';
+    html += '</div>';
+    html += '<div style="font-size:11px; color:var(--muted); margin-top:8px;">Filed under your currently selected week (' + (state.weeks[state.selected.weekId] ? state.weeks[state.selected.weekId].label : '') + ').</div>';
+    html += '</div></div>';
+  }
+  return html;
+}
+
+function escapeHtml(s){ return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function render(){
+  var body = '';
+  if (state.selected.tab === 'vision') body = renderVision();
+  else if (state.selected.tab === 'quarterly') body = renderQuarterly();
+  else if (state.selected.tab === 'monthly') body = renderMonthly();
+  else if (state.selected.tab === 'calendar') body = renderCalendar();
+  else if (state.selected.tab === 'weekly') body = renderWeekly();
+  else if (state.selected.tab === 'clusters') body = renderClusters();
+  else body = renderBacklog();
+  var titleMap = {vision:'Vision', quarterly:'Quarterly goals', monthly:'Monthly overview', calendar:'Calendar', weekly:'Weekly tracker', clusters:'Clusters', backlog:'Backlog'};
+  var main = '<div class="pt-main"><h1 class="pt-title">' + titleMap[state.selected.tab] + '</h1><p class="pt-subtitle">Update a week and it rolls up through months and quarters automatically.</p>' + body + '</div>';
+  app.innerHTML = '<div class="pt-shell">' + sidebar() + main + '</div>';
+}
+
+function findTask(weekId, clusterId, taskId){
+  var arr = state.weeks[weekId].tasks[clusterId];
+  for (var i=0;i<arr.length;i++) if (arr[i].id === taskId) return arr[i];
+  return null;
+}
+function clearSubclusterRefs(clusterId, subId){
+  Object.keys(state.weeks).forEach(function(wid){ (state.weeks[wid].tasks[clusterId] || []).forEach(function(t){ if (t.subclusterId === subId) t.subclusterId = ''; }); });
+}
+function moveTask(payload, destWeek, destCluster, destSub, beforeTaskId){
+  if (!payload) return;
+  var srcArr = state.weeks[payload.week] && state.weeks[payload.week].tasks[payload.cluster];
+  if (!srcArr) return;
+  var idx = srcArr.findIndex(function(t){ return t.id === payload.task; });
+  if (idx === -1) return;
+  var taskObj = srcArr[idx];
+  if (beforeTaskId === taskObj.id) return;
+  srcArr.splice(idx, 1);
+  taskObj.subclusterId = destSub || '';
+  var destArr = state.weeks[destWeek].tasks[destCluster];
+  if (beforeTaskId) {
+    var ti = destArr.findIndex(function(t){ return t.id === beforeTaskId; });
+    if (ti === -1) destArr.push(taskObj); else destArr.splice(ti, 0, taskObj);
+  } else {
+    destArr.push(taskObj);
+  }
+}
+
+app.addEventListener('dragstart', function(e){
+  var el = e.target.closest('[data-drag-task]');
+  if (!el) return;
+  var payload = { task: el.dataset.dragTask, week: el.dataset.dragWeek, cluster: el.dataset.dragCluster, sub: el.dataset.dragSub };
+  dragPayload = payload;
+  try { e.dataTransfer.setData('text/plain', JSON.stringify(payload)); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+});
+app.addEventListener('dragover', function(e){
+  if (e.target.closest('[data-dropzone]')) e.preventDefault();
+});
+app.addEventListener('drop', function(e){
+  var dz = e.target.closest('[data-dropzone]');
+  if (!dz) return;
+  e.preventDefault();
+  var payload = dragPayload;
+  try { var raw = e.dataTransfer.getData('text/plain'); if (raw) payload = JSON.parse(raw); } catch(err){}
+  if (!payload) return;
+  if (dz.dataset.dropzone === 'today') {
+    var t = findTask(payload.week, payload.cluster, payload.task);
+    if (t) t.date = todayStr();
+  } else if (dz.dataset.dropzone === 'group') {
+    moveTask(payload, dz.dataset.dropWeek, dz.dataset.dropCluster, dz.dataset.dropSub, null);
+  } else if (dz.dataset.dropzone === 'task') {
+    moveTask(payload, dz.dataset.dropWeek, dz.dataset.dropCluster, dz.dataset.dropSub, dz.dataset.dropBefore);
+  }
+  dragPayload = null;
+  render(); scheduleSave();
+});
+
+function exportBackup(){
+  try {
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'planning-tracker-backup.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  } catch(e){ console.warn('export failed', e); }
+}
+function importBackup(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try {
+      state = normalizeState(JSON.parse(reader.result));
+      render(); scheduleSave();
+    } catch(e){ console.warn('import failed', e); }
+  };
+  reader.readAsText(file);
+}
+
+app.addEventListener('change', function(e){
+  var t = e.target;
+  if (t.matches('[data-import-file]') && t.files && t.files[0]) importBackup(t.files[0]);
+});
+
+app.addEventListener('click', function(e){
+  var el;
+  if ((el = e.target.closest('[data-export]'))) { exportBackup(); return; }
+  if ((el = e.target.closest('[data-tab]'))) { state.selected.tab = el.dataset.tab; render(); return; }
+  if ((el = e.target.closest('[data-toggle-expand]'))) { var k = el.dataset.toggleExpand; uiExpanded[k] = !uiExpanded[k]; render(); return; }
+  if ((el = e.target.closest('[data-goto-quarter]'))) { state.selected.quarterId = el.dataset.gotoQuarter; render(); return; }
+  if ((el = e.target.closest('[data-goto-month]'))) { state.selected.monthId = el.dataset.gotoMonth; render(); return; }
+  if ((el = e.target.closest('[data-goto-week]'))) { state.selected.weekId = el.dataset.gotoWeek; state.selected.tab = 'weekly'; render(); return; }
+  if ((el = e.target.closest('[data-goto-quarterly]'))) { state.selected.tab = 'quarterly'; render(); return; }
+  if ((el = e.target.closest('[data-cal-prev]'))) { state.selected.calMonth -= 1; if (state.selected.calMonth < 0) { state.selected.calMonth = 11; state.selected.calYear -= 1; } render(); return; }
+  if ((el = e.target.closest('[data-cal-next]'))) { state.selected.calMonth += 1; if (state.selected.calMonth > 11) { state.selected.calMonth = 0; state.selected.calYear += 1; } render(); return; }
+  if ((el = e.target.closest('[data-cal-day]'))) { var ds = el.dataset.calDay; state.selected.calDay = (state.selected.calDay === ds) ? null : ds; render(); return; }
+  if ((el = e.target.closest('[data-cycle-week]'))) { var t = findTask(el.dataset.cycleWeek, el.dataset.cycleCluster, el.dataset.cycleTask); if (t) t.status = CYCLE[(CYCLE.indexOf(t.status) + 1) % CYCLE.length]; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-count-week]'))) { var tc = findTask(el.dataset.countWeek, el.dataset.countCluster, el.dataset.countTask); if (tc) tc.progress = (tc.progress + 1) % (tc.target + 1); render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-star-week]'))) { var ts = findTask(el.dataset.starWeek, el.dataset.starCluster, el.dataset.starTask); if (ts) ts.starred = !ts.starred; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-unschedule]'))) { var tu = findTask(el.dataset.week, el.dataset.cluster, el.dataset.task); if (tu) tu.date = ''; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-toggle-today]'))) {
+    var tt = findTask(el.dataset.week, el.dataset.cluster, el.dataset.task);
+    if (tt) tt.date = (tt.date === todayStr()) ? '' : todayStr();
+    render(); scheduleSave(); return;
+  }
+  if ((el = e.target.closest('[data-move-next]'))) {
+    var nid = nextWeekId(el.dataset.week);
+    var srcTask = findTask(el.dataset.week, el.dataset.cluster, el.dataset.task);
+    if (nid && srcTask) { copyTaskTo(srcTask, nid, el.dataset.cluster); render(); scheduleSave(); }
+    return;
+  }
+  if ((el = e.target.closest('[data-del-task]'))) { var arr = state.weeks[el.dataset.week].tasks[el.dataset.cluster]; state.weeks[el.dataset.week].tasks[el.dataset.cluster] = arr.filter(function(t){ return t.id !== el.dataset.task; }); render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-toggle-backlog]'))) { var item = state.backlog[el.dataset.list].filter(function(i){ return i.id === el.dataset.item; })[0]; if (item) item.done = !item.done; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-del-backlog]'))) { state.backlog[el.dataset.list] = state.backlog[el.dataset.list].filter(function(i){ return i.id !== el.dataset.item; }); render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-del-vision]'))) { state.visions = state.visions.filter(function(v){ return v.id !== el.dataset.delVision; }); render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-set-cluster-color]'))) { var cc = clusterById(el.dataset.cluster); if (cc) cc.color = el.dataset.color; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-del-cluster]'))) {
+    var cid = el.dataset.delCluster, key = 'cluster_' + cid;
+    if (!confirmDelete[key]) { confirmDelete[key] = true; render(); setTimeout(function(){ confirmDelete[key] = false; render(); }, 4000); }
+    else {
+      state.clusters = state.clusters.filter(function(c){ return c.id !== cid; });
+      Object.keys(state.weeks).forEach(function(wid){ delete state.weeks[wid].tasks[cid]; });
+      Object.keys(state.quarterBridge).forEach(function(qid){ delete state.quarterBridge[qid][cid]; });
+      confirmDelete[key] = false; render(); scheduleSave();
+    }
+    return;
+  }
+  if ((el = e.target.closest('[data-del-subcluster]'))) { var ccl = clusterById(el.dataset.cluster); if (ccl) { clearSubclusterRefs(ccl.id, el.dataset.subcluster); ccl.subclusters = ccl.subclusters.filter(function(s){ return s.id !== el.dataset.subcluster; }); } render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-del-goal]'))) { var qid2 = el.dataset.quarter, cid2 = el.dataset.cluster, gid = el.dataset.goal; state.quarterBridge[qid2][cid2].goals = state.quarterBridge[qid2][cid2].goals.filter(function(g){ return g.id !== gid; }); render(); scheduleSave(); return; }
+});
+
+app.addEventListener('input', function(e){
+  var t = e.target;
+  if (t.matches('[data-field="vision-title"]')) { var v = state.visions.filter(function(x){ return x.id === t.dataset.vision; })[0]; if (v) v.title = t.value; scheduleSave(); return; }
+  if (t.matches('[data-field="vision-text"]')) { var v2 = state.visions.filter(function(x){ return x.id === t.dataset.vision; })[0]; if (v2) v2.text = t.value; scheduleSave(); return; }
+  if (t.matches('[data-field="task-text"]')) { var task = findTask(t.dataset.week, t.dataset.cluster, t.dataset.task); if (task) task.text = t.value; scheduleSave(); return; }
+  if (t.matches('[data-field="cluster-name"]')) { var cc2 = clusterById(t.dataset.cluster); if (cc2) cc2.name = t.value; scheduleSave(); return; }
+  if (t.matches('[data-field="subcluster-name"]')) { var cc3 = clusterById(t.dataset.cluster); if (cc3) { var sc = cc3.subclusters.filter(function(s){ return s.id === t.dataset.subcluster; })[0]; if (sc) sc.name = t.value; } scheduleSave(); return; }
+  if (t.matches('[data-field="goal-title"]')) { var g1 = state.quarterBridge[t.dataset.quarter][t.dataset.cluster].goals.filter(function(g){ return g.id === t.dataset.goal; })[0]; if (g1) g1.title = t.value; scheduleSave(); return; }
+  if (t.matches('[data-field="backlog-url"]')) { var it = state.backlog[t.dataset.list].filter(function(x){ return x.id === t.dataset.item; })[0]; if (it) it.url = t.value; scheduleSave(); return; }
+});
+
+app.addEventListener('keydown', function(e){
+  if (e.key !== 'Enter') return;
+  var t = e.target;
+  if (t.matches('[data-new-task-input]')) {
+    var val = t.value.trim();
+    if (!val) return;
+    var row = t.closest('.add-row');
+    var targetInput = row ? row.querySelector('[data-new-task-target]') : null;
+    var targetVal = targetInput && targetInput.value ? Math.max(1, parseInt(targetInput.value, 10) || 1) : 1;
+    state.weeks[t.dataset.week].tasks[t.dataset.cluster].push({ id: uid(), text: val, status: 'none', starred:false, date:'', subclusterId: t.dataset.sub || '', target: targetVal, progress: 0 });
+    if (targetInput) targetInput.value = '';
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-backlog-input]')) {
+    var val2 = t.value.trim();
+    if (!val2) return;
+    state.backlog[t.dataset.list].push({ id: uid(), text: val2, done: false, url:'' });
+    render(); scheduleSave();
+  } else if (t.matches('[data-cal-new-task]')) {
+    var val3 = t.value.trim();
+    if (!val3) return;
+    var wrap = t.closest('.card');
+    var sel = wrap ? wrap.querySelector('[data-cal-cluster]') : null;
+    var clusterId = sel ? sel.value : state.clusters[0].id;
+    var week = state.weeks[state.selected.weekId] ? state.selected.weekId : Object.keys(state.weeks)[0];
+    state.weeks[week].tasks[clusterId].push({ id: uid(), text: val3, status:'none', starred:false, date: state.selected.calDay, subclusterId:'', target:1, progress:0 });
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-vision-input]')) {
+    var vt = t.value.trim();
+    if (!vt) return;
+    state.visions.push({ id: uid(), title: vt, text: '' });
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-cluster-input]')) {
+    var cn = t.value.trim();
+    if (!cn) return;
+    var newId = uid();
+    var color = CLUSTER_COLORS[state.clusters.length % CLUSTER_COLORS.length];
+    state.clusters.push({ id:newId, name:cn, color:color, subclusters:[] });
+    Object.keys(state.weeks).forEach(function(wid){ state.weeks[wid].tasks[newId] = []; });
+    Object.keys(state.quarterBridge).forEach(function(qid){ state.quarterBridge[qid][newId] = {goals:[]}; });
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-subcluster-input]')) {
+    var sn = t.value.trim();
+    if (!sn) return;
+    var ccl2 = clusterById(t.dataset.cluster);
+    if (ccl2) ccl2.subclusters.push({ id: uid(), name: sn });
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-goal-input]')) {
+    var gn = t.value.trim();
+    if (!gn) return;
+    state.quarterBridge[t.dataset.quarter][t.dataset.cluster].goals.push({ id: uid(), title: gn });
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-label]')) {
+    var label = t.value.trim();
+    if (!label) return;
+    var action = t.dataset.add;
+    if (action === 'quarter') {
+      var qid = uid();
+      state.quarters.push({id:qid, label:label});
+      state.quarterBridge[qid] = emptyBridge(state.clusters);
+      state.selected.quarterId = qid;
+    } else if (action === 'month') {
+      var mid = uid();
+      var w1 = uid(), w2 = uid(), w3 = uid(), w4 = uid();
+      [w1,w2,w3,w4].forEach(function(wid, i){ state.weeks[wid] = {label:'Week ' + (i+1), monthId:mid, tasks: emptyTaskMap(state.clusters)}; });
+      state.months.push({id:mid, label:label, quarterId: state.selected.quarterId, weekIds:[w1,w2,w3,w4]});
+      state.selected.monthId = mid;
+    } else if (action === 'week') {
+      var wid2 = uid();
+      var month = state.months.filter(function(m){ return m.id === state.selected.monthId; })[0] || state.months[0];
+      state.weeks[wid2] = {label: label, monthId: month.id, tasks: emptyTaskMap(state.clusters)};
+      month.weekIds.push(wid2);
+      state.selected.weekId = wid2;
+    }
+    render(); scheduleSave();
+  }
+});
+
+init();
+})();
+</script>
+</body>
+</html>
