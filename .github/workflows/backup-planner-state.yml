@@ -1,0 +1,58 @@
+name: Backup planner state
+
+on:
+  schedule:
+    # Runs at 06:00 UTC on days 1, 4, 7, 10, ... of each month (~every 3 days).
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch current planner state from Supabase
+        env:
+          SUPABASE_URL: https://tumgwafxtsdgjkkuojka.supabase.co
+          # This is the client-side "publishable" (anon) key — already public
+          # inside index.html on this same repo, so it carries no secrets.
+          SUPABASE_KEY: sb_publishable_zZunbEMhq-D1aXxtb6SuJQ_BR9weJQc
+        run: |
+          set -euo pipefail
+          curl -sS -f \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/planner_state?id=eq.default&select=data,updated_at" \
+            -o /tmp/resp.json
+
+          node -e "
+            const rows = JSON.parse(require('fs').readFileSync('/tmp/resp.json', 'utf8'));
+            if (!Array.isArray(rows) || rows.length === 0 || !rows[0].data) {
+              console.error('No usable row returned from Supabase — skipping this backup.');
+              process.exit(1);
+            }
+            require('fs').writeFileSync('/tmp/planner-state.json', JSON.stringify(rows[0].data, null, 2));
+          "
+
+      - name: Save dated snapshot
+        run: |
+          mkdir -p backups
+          today=$(date -u +%Y-%m-%d)
+          cp /tmp/planner-state.json "backups/planner-state-$today.json"
+          cp /tmp/planner-state.json "backups/planner-state-latest.json"
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "planner-backup-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add backups/
+          if git diff --cached --quiet; then
+            echo "No change since last backup — nothing to commit."
+          else
+            git commit -m "Automated planner-state backup: $(date -u +%Y-%m-%d)"
+            git push
+          fi
