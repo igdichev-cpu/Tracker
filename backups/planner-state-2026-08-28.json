@@ -1,0 +1,170 @@
+{
+  "seq": 1,
+  "weeks": {
+    "w1": {
+      "label": "Week 1",
+      "tasks": {
+        "apt": [],
+        "job": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w2": {
+      "label": "Week 2",
+      "tasks": {
+        "apt": [],
+        "job": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w3": {
+      "label": "Week 3",
+      "tasks": {
+        "apt": [],
+        "job": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w4": {
+      "label": "Week 4",
+      "tasks": {
+        "apt": [],
+        "job": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    }
+  },
+  "months": [
+    {
+      "id": "m1",
+      "label": "August 2026",
+      "weekIds": [
+        "w1",
+        "w2",
+        "w3",
+        "w4"
+      ],
+      "quarterId": "q1"
+    }
+  ],
+  "backlog": {
+    "buy": [],
+    "ideas": []
+  },
+  "visions": [
+    {
+      "id": "v1",
+      "text": "Land a strategic / product design role at an agile B2B SaaS company, using the RepAIr case study to show research-to-shipped range. Freelance UX research and facilitation running alongside.",
+      "title": "Vision — Sep 2026"
+    },
+    {
+      "id": "v2",
+      "text": "Recognised as a strategic design voice in the repair and recommerce space — an established content practice, a DACH network, and either a high-leverage in-house seat or a thriving independent practice.",
+      "title": "Vision — Sep 2027"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "design",
+      "name": "Design",
+      "color": "#7F77DD",
+      "subclusters": []
+    },
+    {
+      "id": "social",
+      "name": "Social & facilitation",
+      "color": "#1D9E75",
+      "subclusters": []
+    },
+    {
+      "id": "lang",
+      "name": "Languages",
+      "color": "#D85A30",
+      "subclusters": []
+    },
+    {
+      "id": "sport",
+      "name": "Sport",
+      "color": "#378ADD",
+      "subclusters": []
+    },
+    {
+      "id": "apt",
+      "name": "Apartment",
+      "color": "#A97142",
+      "subclusters": []
+    },
+    {
+      "id": "job",
+      "name": "Job search & network",
+      "color": "#D4537E",
+      "subclusters": [
+        {
+          "id": "sub_apply",
+          "name": "Job applications"
+        },
+        {
+          "id": "sub_free",
+          "name": "Freelance projects"
+        }
+      ]
+    }
+  ],
+  "quarters": [
+    {
+      "id": "q1",
+      "label": "Q3 2026"
+    }
+  ],
+  "selected": {
+    "tab": "weekly",
+    "calDay": null,
+    "weekId": "w4",
+    "calYear": 2026,
+    "monthId": "m1",
+    "calMonth": 7,
+    "quarterId": "q1"
+  },
+  "quarterBridge": {
+    "q1": {
+      "apt": {
+        "goals": []
+      },
+      "job": {
+        "goals": []
+      },
+      "lang": {
+        "goals": []
+      },
+      "sport": {
+        "goals": []
+      },
+      "design": {
+        "goals": []
+      },
+      "social": {
+        "goals": []
+      }
+    }
+  }
+}
