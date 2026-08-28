@@ -267,6 +267,11 @@ try { storageOk = !!(window && window.storage && typeof window.storage.get === '
 var SUPABASE_URL = 'https://tumgwafxtsdgjkkuojka.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_zZunbEMhq-D1aXxtb6SuJQ_BR9weJQc';
 var supabaseStatus = 'checking';
+// Only ever true once we've gotten a confirmed answer (good data, or a
+// confirmed-empty row) straight from Supabase. A failed/errored load must
+// NEVER flip this true — otherwise a transient network hiccup falls back to
+// a blank template that then gets silently saved over real data.
+var canSyncToSupabase = false;
 
 function supaHeaders(extra){
   var h = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
@@ -276,10 +281,18 @@ function supaHeaders(extra){
 function supaLoad(){
   return fetch(SUPABASE_URL + '/rest/v1/planner_state?id=eq.default&select=data', { headers: supaHeaders() })
     .then(function(r){ if (!r.ok) throw new Error('bad status ' + r.status); return r.json(); })
-    .then(function(rows){ supabaseStatus = 'ok'; return (rows && rows[0]) ? rows[0].data : null; })
-    .catch(function(e){ supabaseStatus = 'error'; return undefined; });
+    .then(function(rows){ return { ok:true, data: (rows && rows[0]) ? rows[0].data : null }; })
+    .catch(function(e){ return { ok:false, data: undefined }; });
 }
 function supaSave(){
+  if (!canSyncToSupabase) {
+    // We never got a trustworthy read from Supabase this session (or the
+    // read failed) — refuse to write. Writing here risks overwriting real
+    // data with whatever fallback/blank state is currently in memory.
+    supabaseStatus = 'blocked';
+    render();
+    return Promise.resolve();
+  }
   return fetch(SUPABASE_URL + '/rest/v1/planner_state?on_conflict=id', {
     method: 'POST',
     headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
@@ -289,7 +302,9 @@ function supaSave(){
 
 function uid(){ state.seq += 1; return 't' + state.seq + '_' + Date.now().toString(36); }
 
+var hasLocalEdits = false;
 function scheduleSave(){
+  hasLocalEdits = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
     supaSave();
@@ -312,9 +327,41 @@ function loadFromStorageFallback(){
 }
 
 function init(){
-  supaLoad().then(function(data){
-    if (data) { state = normalizeState(data); render(); return; }
+  supaLoad().then(function(res){
+    if (res.ok) {
+      canSyncToSupabase = true;
+      supabaseStatus = 'ok';
+      if (res.data) { state = normalizeState(res.data); render(); return; }
+      loadFromStorageFallback();
+      return;
+    }
+    // Load failed: we have no idea what's really in Supabase, so syncing
+    // stays disabled until a retry confirms it one way or the other.
+    canSyncToSupabase = false;
+    supabaseStatus = 'error';
     loadFromStorageFallback();
+  });
+}
+
+function retrySync(){
+  supabaseStatus = 'checking';
+  render();
+  supaLoad().then(function(res){
+    if (!res.ok) { canSyncToSupabase = false; supabaseStatus = 'error'; render(); return; }
+    if (res.data) {
+      if (hasLocalEdits) {
+        var keepLocal = window.confirm('Reconnected to Supabase. You have local changes made while disconnected.\n\nPress OK to KEEP your local changes and overwrite the cloud copy with them.\nPress Cancel to DISCARD your local changes and load the saved cloud copy instead.');
+        canSyncToSupabase = true;
+        if (keepLocal) { supabaseStatus = 'ok'; scheduleSave(); return; }
+        hasLocalEdits = false; state = normalizeState(res.data); supabaseStatus = 'ok'; render(); return;
+      }
+      canSyncToSupabase = true;
+      state = normalizeState(res.data); supabaseStatus = 'ok'; render(); return;
+    }
+    canSyncToSupabase = true;
+    supabaseStatus = 'ok';
+    if (hasLocalEdits) scheduleSave();
+    render();
   });
 }
 
@@ -437,6 +484,22 @@ function starButton(starred, attrs){
 }
 function clusterDot(color){ return '<span class="dot" style="width:10px;height:10px;background:' + color + ';"></span>'; }
 
+function syncStatusLine(){
+  if (supabaseStatus === 'ok') return '<div style="font-size:11px; padding:2px 10px 8px; color:var(--green-fg);">● Synced to Supabase</div>';
+  if (supabaseStatus === 'checking') return '<div style="font-size:11px; padding:2px 10px 8px; color:var(--muted);">● Checking Supabase…</div>';
+  var msg = supabaseStatus === 'blocked'
+    ? '● Not connected — changes are NOT being saved'
+    : '● Supabase unreachable — changes are NOT being saved';
+  return '<div style="font-size:11px; padding:2px 10px 4px; color:var(--red-fg); font-weight:600;">' + msg + '</div>' +
+    '<button data-retry-sync style="width:100%; text-align:left; border:1px solid var(--red-strong); background:transparent; color:var(--red-fg); font-size:12px; padding:6px 10px; border-radius:8px; margin-bottom:8px;">Retry connection</button>';
+}
+function syncWarningBanner(){
+  if (canSyncToSupabase) return '';
+  return '<div class="card" style="border:1.5px solid var(--red-strong); background:var(--red-bg); color:var(--red-fg); padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+    '<div style="flex:1; min-width:180px; font-size:13px; font-weight:600;">⚠ Not connected to your saved data. Anything you do now stays only in this tab and will be lost if you reload or close it.</div>' +
+    '<button data-retry-sync style="border:1px solid var(--red-strong); background:transparent; color:var(--red-fg); font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px; white-space:nowrap;">Retry connection</button>' +
+    '</div>';
+}
 function sidebar(){
   var html = '<div class="pt-sidebar">';
   html += '<div class="brand"><span class="brand-mark"></span>Planning<button data-mobile-nav-close class="mobile-nav-btn" style="margin-left:auto;" title="Close menu">' + icon('close', 16) + '</button></div>';
@@ -447,7 +510,7 @@ function sidebar(){
   html += sidebarList(state.quarters, state.selected.quarterId, 'data-goto-quarter', 'Quarter', 'quarterSide', {placeholder:'+ Add quarter', action:'quarter'});
   html += sidebarList(state.months, state.selected.monthId, 'data-goto-month', 'Month', 'monthSide', {placeholder:'+ Add month', action:'month'});
   html += '<div class="side-label">Backup</div>';
-  html += '<div style="font-size:11px; padding:2px 10px 8px; color:' + (supabaseStatus === 'ok' ? 'var(--green-fg)' : (supabaseStatus === 'error' ? 'var(--red-fg)' : 'var(--muted)')) + ';">' + (supabaseStatus === 'ok' ? '● Synced to Supabase' : (supabaseStatus === 'error' ? '● Supabase unreachable — using local backup' : '● Checking Supabase…')) + '</div>';
+  html += syncStatusLine();
   html += '<button data-export style="width:100%; text-align:left; border:1px solid var(--border); background:transparent; color:var(--chip-fg); font-size:12px; padding:7px 10px; border-radius:8px; margin-bottom:6px;">Download backup (.json)</button>';
   html += '<label style="display:block; width:100%; text-align:left; border:1px solid var(--border); background:transparent; color:var(--chip-fg); font-size:12px; padding:7px 10px; border-radius:8px; cursor:pointer;">Restore from file<input type="file" accept="application/json" data-import-file style="display:none;"></label>';
   html += '<div style="font-size:10px; color:var(--muted); padding:6px 10px 0;">Save a backup regularly — this is the copy that survives publishing or switching devices.</div>';
@@ -812,7 +875,7 @@ function render(){
   else body = renderBacklog();
   var titleMap = {vision:'Vision', quarterly:'Quarterly goals', monthly:'Monthly overview', calendar:'Calendar', weekly:'Weekly tracker', clusters:'Clusters', backlog:'Backlog'};
   var topbar = '<div class="pt-topbar"><button data-mobile-nav-toggle class="mobile-nav-btn" title="Open menu">' + icon('menu', 18) + '</button><div><h1 class="pt-title">' + titleMap[state.selected.tab] + '</h1><p class="pt-subtitle">Update a week and it rolls up through months and quarters automatically.</p></div></div>';
-  var main = '<div class="pt-main">' + topbar + body + '</div>';
+  var main = '<div class="pt-main">' + topbar + syncWarningBanner() + body + '</div>';
   var shellClass = 'pt-shell' + (mobileNavOpen ? ' nav-open' : '');
   app.innerHTML = '<div class="' + shellClass + '">' + sidebar() + main + '<div class="pt-backdrop" data-mobile-nav-backdrop></div></div>';
 }
@@ -901,6 +964,7 @@ app.addEventListener('change', function(e){
 
 app.addEventListener('click', function(e){
   var el;
+  if ((el = e.target.closest('[data-retry-sync]'))) { retrySync(); return; }
   if ((el = e.target.closest('[data-mobile-nav-toggle]'))) { mobileNavOpen = true; render(); return; }
   if ((el = e.target.closest('[data-mobile-nav-close]'))) { mobileNavOpen = false; render(); return; }
   if ((el = e.target.closest('[data-mobile-nav-backdrop]'))) { mobileNavOpen = false; render(); return; }
