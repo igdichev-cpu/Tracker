@@ -72,8 +72,9 @@
   #app .task-row { border-radius:10px; border:2px solid transparent; }
   #app .drag-handle { cursor:grab; color:var(--muted); display:flex; align-items:center; flex-shrink:0; }
   #app .drag-handle:active { cursor:grabbing; }
-  #app .swatch { width:20px; height:20px; border-radius:50%; border:2px solid transparent; flex-shrink:0; }
+  #app .swatch { width:20px; height:20px; border-radius:50%; border:2px solid transparent; flex-shrink:0; -webkit-appearance:none; appearance:none; padding:0; margin:0; display:inline-flex; align-items:center; justify-content:center; }
   #app .swatch.selected { border-color:var(--fg); }
+  #app .pt-sq-btn { -webkit-appearance:none; appearance:none; padding:0; margin:0; display:inline-flex; align-items:center; justify-content:center; }
   #app *:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
   #app h1.pt-title { font-size:19px; font-weight:700; margin:2px 0 3px; letter-spacing:-0.01em; }
   #app p.pt-subtitle { font-size:13px; color:var(--muted); margin:0 0 20px; }
@@ -90,6 +91,13 @@
   #app .mobile-nav-btn { display:none; border:none; background:var(--chip); color:var(--fg); border-radius:9px; width:34px; height:34px; align-items:center; justify-content:center; flex-shrink:0; }
   #app .pt-topbar { display:flex; align-items:flex-start; gap:10px; }
   #app .pt-backdrop { display:none; position:fixed; inset:0; background:rgba(10,12,20,.45); z-index:55; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  #app .task-row[data-drag-row] { touch-action: pan-y; }
+  #app .pt-dragging-card { box-shadow: 0 12px 28px rgba(0,0,0,.35); opacity:.98; }
+  #app .pt-drop-placeholder { border:2px dashed var(--accent); border-radius:10px; background:var(--accent-soft); margin-bottom:6px; box-sizing:border-box; }
+  body.pt-dragging-active { cursor: grabbing !important; }
+  body.pt-dragging-active, body.pt-dragging-active * { -webkit-user-select:none !important; user-select:none !important; }
+  #app .cal-link { color:var(--muted); display:inline-flex; align-items:center; padding:2px; flex-shrink:0; }
+  #app .cal-link:hover { color:var(--accent); }
   @media (max-width:900px) {
     #app .pt-shell { flex-direction:column; }
     #app .pt-sidebar { width:100%; position:static; max-height:none; }
@@ -112,7 +120,7 @@
     #app .goal-row input[type="text"] { font-size:15px; }
     #app .pt-backlog-grid { grid-template-columns:1fr !important; }
     #app .task-row { flex-wrap:wrap; row-gap:6px; }
-    #app .task-row input[data-field="task-text"] { flex:1 1 100px; min-width:0; }
+    #app .task-row .pt-task-text-input { flex:1 1 100% !important; min-width:0 !important; }
     #app .add-row { flex-wrap:wrap; }
     #app .add-row input[data-new-task-input] { flex:1 1 140px; min-width:0; }
     #app .pt-cluster-label { width:96px !important; }
@@ -133,7 +141,6 @@ var CYCLE = ['none','green','yellow','red'];
 var CLUSTER_COLORS = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#6366F1','#A97142','#64748B'];
 var uiExpanded = { weekly:false, quarterSide:false, monthSide:false };
 var confirmDelete = {};
-var dragPayload = null;
 var mobileNavOpen = false;
 
 var TABS = [
@@ -199,6 +206,8 @@ function defaultState(){
       w4: {label:'Week 4', monthId:'m1', tasks: emptyTaskMap(clusters)}
     },
     backlog: { buy: [], ideas: [] },
+    dayTasks: {},
+    dayOrder: {},
     selected: { tab:'weekly', quarterId:'q1', monthId:'m1', weekId:'w1', calYear: now.getFullYear(), calMonth: now.getMonth(), calDay: null },
     seq: 1
   };
@@ -248,6 +257,16 @@ function normalizeState(s){
   if (!Array.isArray(s.backlog.ideas)) s.backlog.ideas = [];
   s.backlog.buy.forEach(function(it){ if (typeof it.url === 'undefined') it.url = ''; });
   s.backlog.ideas.forEach(function(it){ if (typeof it.url === 'undefined') it.url = ''; });
+  if (!s.dayTasks || typeof s.dayTasks !== 'object') s.dayTasks = {};
+  Object.keys(s.dayTasks).forEach(function(dk){
+    if (!Array.isArray(s.dayTasks[dk])) { s.dayTasks[dk] = []; return; }
+    s.dayTasks[dk].forEach(function(t){
+      if (typeof t.starred === 'undefined') t.starred = false;
+      if (!t.target) t.target = 1;
+      if (typeof t.progress === 'undefined') t.progress = 0;
+    });
+  });
+  if (!s.dayOrder || typeof s.dayOrder !== 'object') s.dayOrder = {};
   if (!s.selected) s.selected = defaultState().selected;
   var now = new Date();
   if (typeof s.selected.calYear === 'undefined') s.selected.calYear = now.getFullYear();
@@ -380,8 +399,11 @@ function effectiveStatus(t){
   return t.status;
 }
 function sortForDisplay(tasks){
+  // Only completing a task (green) pushes it down. Everything else — including
+  // starring — keeps its manual/drag order (Array.sort is stable, so ties
+  // preserve current position instead of snapping back to a fixed order).
   return tasks.slice().sort(function(a, b){
-    function score(t){ return effectiveStatus(t) === 'green' ? 2 : (t.starred ? 0 : 1); }
+    function score(t){ return effectiveStatus(t) === 'green' ? 1 : 0; }
     return score(a) - score(b);
   });
 }
@@ -464,6 +486,56 @@ function allTasksFlat(){
   return out;
 }
 
+// ---- Day-specific tasks: standalone items pinned to one calendar date,
+// not attached to any week/cluster. Shown merged with weekly tasks that
+// happen to be scheduled (.date) for that same day, in Today and Calendar. ----
+function dayTasksFor(dateKey){ return (state.dayTasks && state.dayTasks[dateKey]) || []; }
+function findDayTask(dateKey, taskId){
+  var arr = dayTasksFor(dateKey);
+  for (var i = 0; i < arr.length; i++) if (arr[i].id === taskId) return arr[i];
+  return null;
+}
+function dayItemKey(item){
+  return item.kind === 'day' ? ('d:' + item.dateKey + ':' + item.task.id) : ('w:' + item.weekId + ':' + item.clusterId + ':' + item.task.id);
+}
+function dayItemsFor(dateKey){
+  var items = [];
+  allTasksFlat().forEach(function(x){ if (x.task.date === dateKey) items.push({ kind:'week', weekId:x.weekId, clusterId:x.clusterId, clusterName:x.clusterName, task:x.task }); });
+  dayTasksFor(dateKey).forEach(function(t){ items.push({ kind:'day', dateKey:dateKey, task:t }); });
+  var order = (state.dayOrder && state.dayOrder[dateKey]) || [];
+  items.sort(function(a, b){
+    var ia = order.indexOf(dayItemKey(a)), ib = order.indexOf(dayItemKey(b));
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return items;
+}
+function setDayOrder(dateKey, orderedKeys){
+  if (!state.dayOrder) state.dayOrder = {};
+  state.dayOrder[dateKey] = orderedKeys;
+}
+function itemRefFromEl(el){
+  return { kind: el.dataset.itemKind, a: el.dataset.itemA, b: el.dataset.itemB, taskId: el.dataset.itemTask };
+}
+function findTaskByItemRef(ref){
+  if (ref.kind === 'day') return findDayTask(ref.a, ref.taskId);
+  return findTask(ref.a, ref.b, ref.taskId);
+}
+function deleteItemByRef(ref){
+  if (ref.kind === 'day') { state.dayTasks[ref.a] = dayTasksFor(ref.a).filter(function(t){ return t.id !== ref.taskId; }); return; }
+  var arr = (state.weeks[ref.a] && state.weeks[ref.a].tasks[ref.b]) || [];
+  state.weeks[ref.a].tasks[ref.b] = arr.filter(function(t){ return t.id !== ref.taskId; });
+}
+function gcalLink(dateKey, text){
+  var parts = dateKey.split('-').map(Number);
+  var start = parts[0] + pad2(parts[1]) + pad2(parts[2]);
+  var nextD = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+  var end = nextD.getFullYear() + pad2(nextD.getMonth() + 1) + pad2(nextD.getDate());
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(text) + '&dates=' + start + '/' + end;
+}
+
 function pill(status){
   var m = STATUS_META[status];
   return '<span class="pill" style="background:' + m.bg + '; color:' + m.fg + ';"><span class="dot" style="background:' + m.strong + ';"></span>' + m.label + '</span>';
@@ -483,6 +555,48 @@ function starButton(starred, attrs){
   return '<button ' + attrs + ' class="star-btn" style="color:' + (starred ? 'var(--star)' : 'var(--muted)') + ';" title="' + (starred ? 'Unstar' : 'Star as priority') + '">' + icon(starred ? 'starFill' : 'starOutline', 16) + '</button>';
 }
 function clusterDot(color){ return '<span class="dot" style="width:10px;height:10px;background:' + color + ';"></span>'; }
+
+// Renders one row in the unified Today / Calendar-day list. `item` is either
+// {kind:'week', weekId, clusterId, clusterName, task} — a weekly task that
+// happens to be scheduled for this day — or {kind:'day', dateKey, task} — a
+// standalone day-only task that isn't part of any week at all.
+function renderDayItemRow(item){
+  var t = item.task;
+  var sm = STATUS_META[effectiveStatus(t)];
+  var kind = item.kind;
+  var a = kind === 'day' ? item.dateKey : item.weekId;
+  var b = kind === 'day' ? '' : item.clusterId;
+  var refAttrs = 'data-item-kind="' + kind + '" data-item-a="' + a + '" data-item-b="' + b + '" data-item-task="' + t.id + '"';
+  var dragKey = dayItemKey(item);
+  var dragAttrs = 'data-drag-row data-drag-key="' + escapeHtml(dragKey) + '" data-drag-kind="' + kind + '" data-drag-task="' + t.id + '" ' +
+    (kind === 'day' ? ('data-drag-daykey="' + item.dateKey + '"') : ('data-drag-week="' + item.weekId + '" data-drag-cluster="' + item.clusterId + '" data-drag-sub=""'));
+  var dateKey = kind === 'day' ? item.dateKey : t.date;
+
+  var html = '<div class="task-row" ' + dragAttrs + ' style="padding:8px 10px; display:flex; gap:8px; align-items:center; background:' + sm.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
+  html += '<span class="drag-handle">' + icon('grip', 15) + '</span>';
+  if (t.target && t.target > 1) {
+    var mm = STATUS_META[effectiveStatus(t)];
+    html += '<button data-item-count ' + refAttrs + ' class="status-btn" style="border:1.5px solid ' + mm.strong + '; background:' + mm.bg + '; color:' + mm.fg + '; font-size:11px; font-weight:700;" title="Click to log progress">' + t.progress + '/' + t.target + '</button>';
+  } else {
+    html += dotButton(t.status, 'data-item-cycle ' + refAttrs);
+  }
+  html += '<button data-item-star ' + refAttrs + ' class="star-btn" style="color:' + (t.starred ? 'var(--star)' : 'var(--muted)') + ';" title="' + (t.starred ? 'Unstar' : 'Star as priority') + '">' + icon(t.starred ? 'starFill' : 'starOutline', 16) + '</button>';
+  html += '<input type="text" class="pt-task-text-input" data-item-field="text" ' + refAttrs + ' value="' + escapeHtml(t.text) + '" placeholder="Task..." style="flex:1; min-width:0; border:none; background:transparent; font-size:13px; font-weight:600; color:var(--fg); padding:2px 0;">';
+  if (kind === 'week') {
+    var cl = clusterById(item.clusterId);
+    html += '<span style="font-size:11px; color:' + (cl ? cl.color : 'var(--muted)') + '; font-weight:600; white-space:nowrap;">' + escapeHtml(item.clusterName) + '</span>';
+  } else {
+    html += '<span style="font-size:11px; color:var(--muted); font-weight:600; white-space:nowrap;">Day only</span>';
+  }
+  if (dateKey) html += '<a href="' + gcalLink(dateKey, t.text) + '" target="_blank" rel="noopener noreferrer" class="cal-link" title="Add to Google Calendar">' + icon('calendar', 15) + '</a>';
+  if (kind === 'week') {
+    html += '<button data-item-unschedule ' + refAttrs + ' title="Remove from today" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
+  } else {
+    html += '<button data-item-del ' + refAttrs + ' title="Delete" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
+  }
+  html += '</div>';
+  return html;
+}
 
 function syncStatusLine(){
   if (supabaseStatus === 'ok') return '<div style="font-size:11px; padding:2px 10px 8px; color:var(--green-fg);">● Synced to Supabase</div>';
@@ -639,11 +753,12 @@ function renderMonthly(){
 function renderTaskRow(t, weekId, clusterId, subId){
   var m = STATUS_META[effectiveStatus(t)];
   var es = effectiveStatus(t);
-  var html = '<div class="task-row" draggable="false" style="padding:9px 10px; display:flex; gap:8px; align-items:center; background:' + m.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
-  html += '<span class="drag-handle" draggable="true" data-drag-task="' + t.id + '" data-drag-week="' + weekId + '" data-drag-cluster="' + clusterId + '" data-drag-sub="' + (subId||'') + '">' + icon('grip', 15) + '</span>';
+  var dragKey = 'w:' + weekId + ':' + clusterId + ':' + t.id;
+  var html = '<div class="task-row" data-drag-row data-drag-key="' + escapeHtml(dragKey) + '" data-drag-kind="week" data-drag-task="' + t.id + '" data-drag-week="' + weekId + '" data-drag-cluster="' + clusterId + '" data-drag-sub="' + (subId||'') + '" style="padding:9px 10px; display:flex; gap:8px; align-items:center; background:' + m.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
+  html += '<span class="drag-handle">' + icon('grip', 15) + '</span>';
   html += taskControl(t, weekId, clusterId);
   html += starButton(!!t.starred, 'data-star-week="' + weekId + '" data-star-cluster="' + clusterId + '" data-star-task="' + t.id + '"');
-  html += '<input type="text" data-field="task-text" data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" value="' + escapeHtml(t.text) + '" placeholder="Task..." style="flex:1; min-width:0; border:none; background:transparent; font-size:13px; font-weight:600; color:var(--fg); padding:2px 0;">';
+  html += '<input type="text" class="pt-task-text-input" data-field="task-text" data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" value="' + escapeHtml(t.text) + '" placeholder="Task..." style="flex:1; min-width:0; border:none; background:transparent; font-size:13px; font-weight:600; color:var(--fg); padding:2px 0;">';
   if (t.carriedFrom) html += '<span title="Copied here from a previous week" style="font-size:10px; color:' + m.fg + '; opacity:.7; white-space:nowrap;">carried</span>';
   var isToday = t.date === todayStr();
   html += '<button data-toggle-today data-week="' + weekId + '" data-cluster="' + clusterId + '" data-task="' + t.id + '" title="' + (isToday ? 'Scheduled for today — click to remove' : 'Push to today') + '" style="border:1px solid ' + (isToday ? 'var(--accent)' : m.fg + '55') + '; background:' + (isToday ? 'var(--accent-soft)' : 'transparent') + '; color:' + (isToday ? 'var(--accent)' : m.fg) + '; font-size:11px; font-weight:700; padding:3px 7px; border-radius:6px; white-space:nowrap;">' + (isToday ? 'Today ✓' : '→ Today') + '</button>';
@@ -688,20 +803,14 @@ function renderWeekly(){
   var html = '<div style="font-size:12px; color:var(--muted); margin-bottom:8px;">' + escapeHtml(month.label) + '</div>';
   html += weekChipRow(weeksInMonth, wk ? wk.id : null);
 
-  var todays = allTasksFlat().filter(function(x){ return x.task.date === todayStr(); });
+  var todayKey = todayStr();
+  var todayItems = dayItemsFor(todayKey);
   var n = new Date();
-  html += '<div class="card" data-dropzone="today" style="padding:14px 16px; margin-bottom:18px; border:2px dashed var(--accent-soft);">';
-  html += '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;"><div style="font-size:13px; font-weight:700;">Today — ' + MONTH_NAMES[n.getMonth()] + ' ' + n.getDate() + '</div><div style="font-size:11px; color:var(--muted);">Drag a task\'s grip handle here to schedule it</div></div>';
-  if (!todays.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 2px 2px;">Nothing scheduled for today yet.</div>';
-  todays.forEach(function(x){
-    var t = x.task, sm = STATUS_META[effectiveStatus(t)], cl = clusterById(x.clusterId);
-    html += '<div class="task-row" style="padding:8px 10px; display:flex; gap:8px; align-items:center; background:' + sm.bg + '; margin-bottom:6px;">';
-    html += taskControl(t, x.weekId, x.clusterId);
-    html += '<div style="flex:1; font-size:13px; font-weight:600; color:var(--fg);">' + escapeHtml(t.text) + '</div>';
-    html += '<span style="font-size:11px; color:' + (cl ? cl.color : 'var(--muted)') + '; font-weight:600;">' + x.clusterName + '</span>';
-    html += '<button data-unschedule data-week="' + x.weekId + '" data-cluster="' + x.clusterId + '" data-task="' + t.id + '" title="Remove from today" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
-    html += '</div>';
-  });
+  html += '<div class="card" data-dropzone="daylist" data-drop-date="' + todayKey + '" style="padding:14px 16px; margin-bottom:18px; border:2px dashed var(--accent-soft);">';
+  html += '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;"><div style="font-size:13px; font-weight:700;">Today — ' + MONTH_NAMES[n.getMonth()] + ' ' + n.getDate() + '</div><div style="font-size:11px; color:var(--muted);">Drag a card here to schedule it, or reorder</div></div>';
+  if (!todayItems.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 2px 2px;">Nothing scheduled for today yet.</div>';
+  todayItems.forEach(function(item){ html += renderDayItemRow(item); });
+  html += '<input type="text" data-new-daytask-input data-daykey="' + todayKey + '" placeholder="+ Add a task just for today (not part of any week) and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent; margin-top:2px;">';
   html += '</div>';
 
   var week = state.weeks[wk.id];
@@ -779,7 +888,7 @@ function renderBacklog(){
     items.forEach(function(it, idx){
       html += '<div style="display:flex; flex-direction:column; gap:4px; padding:10px 16px;' + (idx < items.length ? ' border-bottom:1px solid var(--border-soft);' : '') + '">';
       html += '<div style="display:flex; align-items:center; gap:10px;">';
-      html += '<button data-toggle-backlog data-list="' + key + '" data-item="' + it.id + '" style="width:18px; height:18px; border-radius:5px; border:1.5px solid var(--green-strong); background:' + (it.done ? 'var(--green-strong)' : 'transparent') + '; flex-shrink:0;"></button>';
+      html += '<button data-toggle-backlog data-list="' + key + '" data-item="' + it.id + '" class="pt-sq-btn" style="width:18px; height:18px; border-radius:5px; border:1.5px solid var(--green-strong); background:' + (it.done ? 'var(--green-strong)' : 'transparent') + '; flex-shrink:0;"></button>';
       html += '<div style="flex:1; font-size:13px; font-weight:500;' + (it.done ? ' text-decoration:line-through; color:var(--muted);' : '') + '">' + escapeHtml(it.text) + '</div>';
       if (it.url) html += '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); font-weight:600; white-space:nowrap;">Open ↗</a>';
       html += '<button data-del-backlog data-list="' + key + '" data-item="' + it.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; padding:2px 6px;">×</button>';
@@ -824,39 +933,31 @@ function renderCalendar(){
     var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
     var ds = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
     var inMonth = d.getMonth() === m;
-    var dayTasks = flat.filter(function(x){ return x.task.date === ds; });
-    var cls = 'cal-cell' + (dayTasks.length > 0 ? ' has-tasks' : '') + (ds === todaysDate ? ' today' : '') + (!inMonth ? ' out' : '');
+    var dayTaskCount = flat.filter(function(x){ return x.task.date === ds; }).length + dayTasksFor(ds).length;
+    var cls = 'cal-cell' + (dayTaskCount > 0 ? ' has-tasks' : '') + (ds === todaysDate ? ' today' : '') + (!inMonth ? ' out' : '');
     html += '<button data-cal-day="' + ds + '" class="' + cls + '" style="text-align:left;">';
     html += '<div style="font-size:13px; font-weight:700;">' + pad2(d.getDate()) + '</div>';
-    html += '<div style="font-size:11px; color:' + (dayTasks.length > 0 ? 'var(--accent)' : 'var(--muted)') + '; font-weight:600; margin-top:4px;">' + dayTasks.length + (dayTasks.length === 1 ? ' task' : ' tasks') + '</div>';
+    html += '<div style="font-size:11px; color:' + (dayTaskCount > 0 ? 'var(--accent)' : 'var(--muted)') + '; font-weight:600; margin-top:4px;">' + dayTaskCount + (dayTaskCount === 1 ? ' task' : ' tasks') + '</div>';
     html += '</button>';
   }
   html += '</div>';
 
   var selDay = state.selected.calDay;
   if (selDay) {
-    var dayTasks2 = flat.filter(function(x){ return x.task.date === selDay; });
+    var dayItems2 = dayItemsFor(selDay);
     html += '<div class="card" style="margin-top:20px; overflow:hidden;">';
     html += '<div style="padding:13px 16px; font-size:13px; font-weight:700;" class="hairline">' + selDay + '</div>';
-    html += '<div style="padding:10px;">';
-    if (!dayTasks2.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 6px 12px;">Nothing scheduled yet.</div>';
-    dayTasks2.forEach(function(x){
-      var t = x.task, sm = STATUS_META[effectiveStatus(t)], cl = clusterById(x.clusterId);
-      html += '<div class="task-row" style="padding:9px 10px; display:flex; gap:8px; align-items:center; background:' + sm.bg + ';' + (t.starred ? ' border-color:var(--star);' : '') + ' margin-bottom:6px;">';
-      html += taskControl(t, x.weekId, x.clusterId);
-      html += starButton(!!t.starred, 'data-star-week="' + x.weekId + '" data-star-cluster="' + x.clusterId + '" data-star-task="' + t.id + '"');
-      html += '<div style="flex:1; font-size:13px; font-weight:600; color:var(--fg);">' + escapeHtml(t.text) + '</div>';
-      html += '<span style="font-size:11px; color:' + (cl ? cl.color : 'var(--muted)') + '; font-weight:600;">' + x.clusterName + '</span>';
-      html += '<button data-del-task data-week="' + x.weekId + '" data-cluster="' + x.clusterId + '" data-task="' + t.id + '" style="border:none; background:transparent; color:var(--muted); font-size:16px; line-height:1; padding:2px 6px;">×</button>';
-      html += '</div>';
-    });
-    html += '<div style="display:flex; gap:8px; margin-top:4px;">';
+    html += '<div data-dropzone="daylist" data-drop-date="' + selDay + '" style="padding:10px;">';
+    if (!dayItems2.length) html += '<div style="font-size:12px; color:var(--muted); padding:6px 6px 12px;">Nothing scheduled yet.</div>';
+    dayItems2.forEach(function(item){ html += renderDayItemRow(item); });
+    html += '<input type="text" data-new-daytask-input data-daykey="' + selDay + '" placeholder="+ Add a day-only task (not part of any week) and press Enter..." style="width:100%; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent; margin-top:2px;">';
+    html += '<div style="display:flex; gap:8px; margin-top:8px;">';
     html += '<select data-cal-cluster style="border:1px solid var(--border); border-radius:8px; padding:7px 8px; font-size:12px; background:transparent;">';
     state.clusters.forEach(function(c){ html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>'; });
     html += '</select>';
-    html += '<input type="text" data-cal-new-task placeholder="Add task for this day and press Enter..." style="flex:1; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;">';
+    html += '<input type="text" data-cal-new-task placeholder="...or add into a week/cluster and press Enter" style="flex:1; border:1px dashed var(--border); border-radius:8px; padding:8px 10px; font-size:12px; background:transparent;">';
     html += '</div>';
-    html += '<div style="font-size:11px; color:var(--muted); margin-top:8px;">Filed under your currently selected week (' + (state.weeks[state.selected.weekId] ? state.weeks[state.selected.weekId].label : '') + ').</div>';
+    html += '<div style="font-size:11px; color:var(--muted); margin-top:8px;">Tasks added into a week/cluster file under your currently selected week (' + (state.weeks[state.selected.weekId] ? state.weeks[state.selected.weekId].label : '') + ').</div>';
     html += '</div></div>';
   }
   return html;
@@ -907,34 +1008,152 @@ function moveTask(payload, destWeek, destCluster, destSub, beforeTaskId){
   }
 }
 
-app.addEventListener('dragstart', function(e){
-  var el = e.target.closest('[data-drag-task]');
-  if (!el) return;
-  var payload = { task: el.dataset.dragTask, week: el.dataset.dragWeek, cluster: el.dataset.dragCluster, sub: el.dataset.dragSub };
-  dragPayload = payload;
-  try { e.dataTransfer.setData('text/plain', JSON.stringify(payload)); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
-});
-app.addEventListener('dragover', function(e){
-  if (e.target.closest('[data-dropzone]')) e.preventDefault();
-});
-app.addEventListener('drop', function(e){
-  var dz = e.target.closest('[data-dropzone]');
-  if (!dz) return;
-  e.preventDefault();
-  var payload = dragPayload;
-  try { var raw = e.dataTransfer.getData('text/plain'); if (raw) payload = JSON.parse(raw); } catch(err){}
-  if (!payload) return;
-  if (dz.dataset.dropzone === 'today') {
-    var t = findTask(payload.week, payload.cluster, payload.task);
-    if (t) t.date = todayStr();
-  } else if (dz.dataset.dropzone === 'group') {
-    moveTask(payload, dz.dataset.dropWeek, dz.dataset.dropCluster, dz.dataset.dropSub, null);
-  } else if (dz.dataset.dropzone === 'task') {
-    moveTask(payload, dz.dataset.dropWeek, dz.dataset.dropCluster, dz.dataset.dropSub, dz.dataset.dropBefore);
+// ---- Pointer-based drag & drop (mouse + touch + pen, uniformly) ----
+// Replaces the old native HTML5 drag-and-drop, which on touch devices only
+// worked when the finger landed precisely on the tiny grip icon and gave no
+// live feedback. This lets a drag start from anywhere on the card (except
+// its buttons/input, which still work normally), tracks the card under the
+// finger/pointer directly, and smoothly slides the other rows out of the way
+// (a FLIP animation) as you cross over them.
+var ptr = null;
+function isFormControl(el){ return !!el.closest('input, textarea, select, a, button'); }
+function rowPayloadFromEl(rowEl){
+  if (rowEl.dataset.dragKind === 'day') return { kind:'day', dateKey: rowEl.dataset.dragDaykey, task: rowEl.dataset.dragTask };
+  return { kind:'week', week: rowEl.dataset.dragWeek, cluster: rowEl.dataset.dragCluster, sub: rowEl.dataset.dragSub || '', task: rowEl.dataset.dragTask };
+}
+
+app.addEventListener('pointerdown', function(e){
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  var row = e.target.closest('[data-drag-row]');
+  if (!row) return;
+  if (isFormControl(e.target)) return;
+  ptr = { row: row, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, payload: rowPayloadFromEl(row), active: false, isTouch: e.pointerType === 'touch' };
+  if (ptr.isTouch) {
+    // Touch needs a brief hold before it commits to a drag, so a normal
+    // scroll swipe (which also starts as vertical movement) isn't hijacked.
+    ptr.pressTimer = setTimeout(function(){
+      if (ptr && !ptr.active) { var ev = ptr.lastEvent || e; startDrag(ev); updateDrag(ev); }
+    }, 160);
   }
-  dragPayload = null;
-  render(); scheduleSave();
 });
+app.addEventListener('pointermove', function(e){
+  if (!ptr) return;
+  ptr.lastEvent = e;
+  if (!ptr.active) {
+    var dx = e.clientX - ptr.startX, dy = e.clientY - ptr.startY;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if (ptr.isTouch) {
+      if (dist > 10) { clearTimeout(ptr.pressTimer); ptr = null; } // moved -> treat as a scroll, let it through
+      return;
+    }
+    if (dist > 6) { startDrag(e); updateDrag(e); }
+    return;
+  }
+  updateDrag(e);
+});
+app.addEventListener('pointerup', endDrag);
+app.addEventListener('pointercancel', endDrag);
+
+function startDrag(e){
+  if (!ptr) return;
+  clearTimeout(ptr.pressTimer);
+  ptr.active = true;
+  var rect = ptr.row.getBoundingClientRect();
+  ptr.grabDX = ptr.startX - rect.left;
+  ptr.grabDY = ptr.startY - rect.top;
+  ptr.placeholder = document.createElement('div');
+  ptr.placeholder.className = 'pt-drop-placeholder';
+  ptr.placeholder.style.height = rect.height + 'px';
+  ptr.row.parentNode.insertBefore(ptr.placeholder, ptr.row);
+  ptr.row.classList.add('pt-dragging-card');
+  ptr.row.style.position = 'fixed';
+  ptr.row.style.width = rect.width + 'px';
+  ptr.row.style.left = rect.left + 'px';
+  ptr.row.style.top = rect.top + 'px';
+  ptr.row.style.zIndex = 9999;
+  ptr.row.style.pointerEvents = 'none';
+  ptr.row.style.margin = '0';
+  document.body.classList.add('pt-dragging-active');
+  try { ptr.row.setPointerCapture(ptr.pointerId); } catch(err){}
+  e.preventDefault();
+}
+
+function movePlaceholder(container, beforeNode){
+  if (ptr.placeholder.parentNode === container && ptr.placeholder.nextSibling === beforeNode) return;
+  var rows = Array.prototype.filter.call(container.children, function(el){ return el !== ptr.placeholder && el !== ptr.row && el.matches('[data-drag-row]'); });
+  var firstRects = rows.map(function(el){ return el.getBoundingClientRect(); });
+  container.insertBefore(ptr.placeholder, beforeNode);
+  rows.forEach(function(el, i){
+    var last = el.getBoundingClientRect();
+    var dx = firstRects[i].left - last.left, dy = firstRects[i].top - last.top;
+    if (dx || dy) {
+      el.style.transition = 'none';
+      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      requestAnimationFrame(function(){
+        el.style.transition = 'transform .18s ease';
+        el.style.transform = '';
+      });
+    }
+  });
+}
+
+function updateDrag(e){
+  e.preventDefault();
+  ptr.row.style.left = (e.clientX - ptr.grabDX) + 'px';
+  ptr.row.style.top = (e.clientY - ptr.grabDY) + 'px';
+  var overEl = document.elementFromPoint(e.clientX, e.clientY);
+  if (!overEl) return;
+  var container = overEl.closest('[data-dropzone]');
+  if (!container) return;
+  var siblingRow = overEl.closest('[data-drag-row]');
+  if (siblingRow === ptr.row) return;
+  if (siblingRow && container.contains(siblingRow)) {
+    var r = siblingRow.getBoundingClientRect();
+    var before = (e.clientY - r.top) < r.height / 2;
+    movePlaceholder(container, before ? siblingRow : siblingRow.nextSibling);
+  } else {
+    var anchorEl = container.querySelector('.add-row, [data-new-daytask-input]');
+    movePlaceholder(container, anchorEl || null);
+  }
+}
+
+function reorderDayList(dateKey, payload, beforeEl){
+  var items = dayItemsFor(dateKey);
+  var movedKey = payload.kind === 'day' ? ('d:' + payload.dateKey + ':' + payload.task) : ('w:' + payload.week + ':' + payload.cluster + ':' + payload.task);
+  var keys = items.map(dayItemKey).filter(function(k){ return k !== movedKey; });
+  var beforeKey = beforeEl ? beforeEl.dataset.dragKey : null;
+  var insertAt = beforeKey ? keys.indexOf(beforeKey) : -1;
+  if (insertAt === -1) keys.push(movedKey); else keys.splice(insertAt, 0, movedKey);
+  setDayOrder(dateKey, keys);
+}
+
+function handleDrop(payload, container, beforeEl){
+  var dz = container.dataset.dropzone;
+  if (dz === 'group') {
+    if (payload.kind !== 'week') return; // day-only tasks don't belong in a weekly cluster list
+    moveTask(payload, container.dataset.dropWeek, container.dataset.dropCluster, container.dataset.dropSub, beforeEl ? beforeEl.dataset.dragTask : null);
+  } else if (dz === 'daylist') {
+    var dateKey = container.dataset.dropDate;
+    if (payload.kind === 'week') {
+      var task = findTask(payload.week, payload.cluster, payload.task);
+      if (task) task.date = dateKey;
+    }
+    reorderDayList(dateKey, payload, beforeEl);
+  }
+}
+
+function endDrag(e){
+  if (!ptr) return;
+  clearTimeout(ptr.pressTimer);
+  if (!ptr.active) { ptr = null; return; }
+  document.body.classList.remove('pt-dragging-active');
+  var container = ptr.placeholder.parentNode;
+  var beforeEl = ptr.placeholder.nextElementSibling;
+  container.removeChild(ptr.placeholder);
+  handleDrop(ptr.payload, container, beforeEl);
+  ptr = null;
+  render(); scheduleSave();
+}
 
 function exportBackup(){
   try {
@@ -965,6 +1184,11 @@ app.addEventListener('change', function(e){
 app.addEventListener('click', function(e){
   var el;
   if ((el = e.target.closest('[data-retry-sync]'))) { retrySync(); return; }
+  if ((el = e.target.closest('[data-item-cycle]'))) { var refc = itemRefFromEl(el); var tc = findTaskByItemRef(refc); if (tc) tc.status = CYCLE[(CYCLE.indexOf(tc.status) + 1) % CYCLE.length]; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-item-count]'))) { var refn = itemRefFromEl(el); var tn = findTaskByItemRef(refn); if (tn) tn.progress = (tn.progress + 1) % (tn.target + 1); render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-item-star]'))) { var refs = itemRefFromEl(el); var ts2 = findTaskByItemRef(refs); if (ts2) ts2.starred = !ts2.starred; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-item-unschedule]'))) { var refu = itemRefFromEl(el); var tu2 = findTaskByItemRef(refu); if (tu2) tu2.date = ''; render(); scheduleSave(); return; }
+  if ((el = e.target.closest('[data-item-del]'))) { var refd = itemRefFromEl(el); deleteItemByRef(refd); render(); scheduleSave(); return; }
   if ((el = e.target.closest('[data-mobile-nav-toggle]'))) { mobileNavOpen = true; render(); return; }
   if ((el = e.target.closest('[data-mobile-nav-close]'))) { mobileNavOpen = false; render(); return; }
   if ((el = e.target.closest('[data-mobile-nav-backdrop]'))) { mobileNavOpen = false; render(); return; }
@@ -981,7 +1205,6 @@ app.addEventListener('click', function(e){
   if ((el = e.target.closest('[data-cycle-week]'))) { var t = findTask(el.dataset.cycleWeek, el.dataset.cycleCluster, el.dataset.cycleTask); if (t) t.status = CYCLE[(CYCLE.indexOf(t.status) + 1) % CYCLE.length]; render(); scheduleSave(); return; }
   if ((el = e.target.closest('[data-count-week]'))) { var tc = findTask(el.dataset.countWeek, el.dataset.countCluster, el.dataset.countTask); if (tc) tc.progress = (tc.progress + 1) % (tc.target + 1); render(); scheduleSave(); return; }
   if ((el = e.target.closest('[data-star-week]'))) { var ts = findTask(el.dataset.starWeek, el.dataset.starCluster, el.dataset.starTask); if (ts) ts.starred = !ts.starred; render(); scheduleSave(); return; }
-  if ((el = e.target.closest('[data-unschedule]'))) { var tu = findTask(el.dataset.week, el.dataset.cluster, el.dataset.task); if (tu) tu.date = ''; render(); scheduleSave(); return; }
   if ((el = e.target.closest('[data-toggle-today]'))) {
     var tt = findTask(el.dataset.week, el.dataset.cluster, el.dataset.task);
     if (tt) tt.date = (tt.date === todayStr()) ? '' : todayStr();
@@ -1022,6 +1245,7 @@ app.addEventListener('input', function(e){
   if (t.matches('[data-field="subcluster-name"]')) { var cc3 = clusterById(t.dataset.cluster); if (cc3) { var sc = cc3.subclusters.filter(function(s){ return s.id === t.dataset.subcluster; })[0]; if (sc) sc.name = t.value; } scheduleSave(); return; }
   if (t.matches('[data-field="goal-title"]')) { var g1 = state.quarterBridge[t.dataset.quarter][t.dataset.cluster].goals.filter(function(g){ return g.id === t.dataset.goal; })[0]; if (g1) g1.title = t.value; scheduleSave(); return; }
   if (t.matches('[data-field="backlog-url"]')) { var it = state.backlog[t.dataset.list].filter(function(x){ return x.id === t.dataset.item; })[0]; if (it) it.url = t.value; scheduleSave(); return; }
+  if (t.matches('[data-item-field="text"]')) { var reft = itemRefFromEl(t); var tt2 = findTaskByItemRef(reft); if (tt2) tt2.text = t.value; scheduleSave(); return; }
 });
 
 app.addEventListener('keydown', function(e){
@@ -1035,6 +1259,13 @@ app.addEventListener('keydown', function(e){
     var targetVal = targetInput && targetInput.value ? Math.max(1, parseInt(targetInput.value, 10) || 1) : 1;
     state.weeks[t.dataset.week].tasks[t.dataset.cluster].push({ id: uid(), text: val, status: 'none', starred:false, date:'', subclusterId: t.dataset.sub || '', target: targetVal, progress: 0 });
     if (targetInput) targetInput.value = '';
+    render(); scheduleSave();
+  } else if (t.matches('[data-new-daytask-input]')) {
+    var val4 = t.value.trim();
+    if (!val4) return;
+    var dk = t.dataset.daykey;
+    if (!state.dayTasks[dk]) state.dayTasks[dk] = [];
+    state.dayTasks[dk].push({ id: uid(), text: val4, status: 'none', starred: false, target: 1, progress: 0 });
     render(); scheduleSave();
   } else if (t.matches('[data-new-backlog-input]')) {
     var val2 = t.value.trim();
