@@ -1,0 +1,902 @@
+{
+  "seq": 90,
+  "weeks": {
+    "w1": {
+      "label": "Week 1",
+      "tasks": {
+        "apt": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w2": {
+      "label": "Week 2",
+      "tasks": {
+        "apt": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w3": {
+      "label": "Week 3",
+      "tasks": {
+        "apt": [],
+        "lang": [],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "w4": {
+      "label": "Week 4",
+      "tasks": {
+        "apt": [],
+        "lang": [
+          {
+            "id": "t13_mtffwx2t",
+            "date": "",
+            "text": "Dutch",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "subclusterId": ""
+          },
+          {
+            "id": "t14_mtffx0fo",
+            "date": "2026-08-30",
+            "text": "German",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "sport": [
+          {
+            "id": "t19_mtfpv5yk",
+            "date": "",
+            "text": "Pilates / Yoga Pametnik / Gym / Padel",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "design": [
+          {
+            "id": "t10_mtffw47e",
+            "date": "",
+            "text": "case study update",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t11_mtffw95n",
+            "date": "",
+            "text": "send to DSK",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "social": [
+          {
+            "id": "t8_mtffvoer",
+            "date": "",
+            "text": "carousels",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 2,
+            "subclusterId": ""
+          },
+          {
+            "id": "t9_mtffvw36",
+            "date": "2026-08-30",
+            "text": "reels",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 2,
+            "subclusterId": ""
+          },
+          {
+            "id": "t12_mtffwlzc",
+            "date": "2026-08-30",
+            "text": "submit vivacom script",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ]
+      },
+      "monthId": "m1",
+      "autoCarried": true
+    },
+    "t21_mtg8wehx": {
+      "label": "Week 1",
+      "tasks": {
+        "apt": [
+          {
+            "id": "t38_mtg8zlxg",
+            "date": "",
+            "text": "Врати",
+            "status": "yellow",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t39_mtg8zt1q",
+            "date": "",
+            "text": "Ключове",
+            "status": "red",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t40_mtg8zwuf",
+            "date": "",
+            "text": "Первази",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t48_mtjx5wtf",
+            "date": "",
+            "text": "Огледало",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "lang": [
+          {
+            "id": "t25_mtg8wehz",
+            "date": "2026-09-02",
+            "text": "Dutch",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 2,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t29_mtg8xn6f",
+            "date": "",
+            "text": "German",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "subclusterId": ""
+          }
+        ],
+        "sport": [
+          {
+            "id": "t36_mtg8zcoc",
+            "date": "2026-08-31",
+            "text": "Yoga Buna",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t37_mtg8zg2n",
+            "date": "",
+            "text": "Reformer",
+            "status": "yellow",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t47_mtjx4z0d",
+            "date": "",
+            "text": "Padel",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t53_mtmicxfh",
+            "date": "",
+            "text": "BodyPump",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "design": [
+          {
+            "id": "t30_mtg8xzim",
+            "date": "2026-09-01",
+            "text": "Applications",
+            "status": "none",
+            "target": 10,
+            "starred": false,
+            "progress": 9,
+            "subclusterId": ""
+          },
+          {
+            "id": "t31_mtg8y731",
+            "date": "2026-08-31",
+            "text": "Portfolio Update",
+            "status": "yellow",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t41_mtg958rh",
+            "date": "",
+            "text": "Startup project Claude",
+            "status": "red",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "social": [
+          {
+            "id": "t32_mtg8ygsk",
+            "date": "",
+            "text": "Carousels",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "subclusterId": ""
+          },
+          {
+            "id": "t33_mtg8ynhz",
+            "date": "",
+            "text": "Vivacom Videos",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "subclusterId": ""
+          },
+          {
+            "id": "t35_mtg8z58m",
+            "date": "2026-09-04",
+            "text": "AI Preparation",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t42_mtguqxl0",
+            "date": "2026-09-04",
+            "text": "Reel",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ]
+      },
+      "monthId": "t20_mtg8wehx",
+      "autoCarried": true
+    },
+    "t22_mtg8wehx": {
+      "label": "Week 2",
+      "tasks": {
+        "apt": [
+          {
+            "id": "t68_mtqukx73",
+            "date": "",
+            "text": "Огледало",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t67_mtquksuf",
+            "date": "",
+            "text": "Первази",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t77_mtv5nz8k",
+            "date": "",
+            "text": "Пердета",
+            "status": "yellow",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t78_mtwj6zq4",
+            "date": "",
+            "text": "Хартиено тиксо",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t75_mtt2eyo6",
+            "date": "2026-09-09",
+            "text": "Стефан",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "lang": [
+          {
+            "id": "t65_mtqukezn",
+            "date": "2026-09-11",
+            "text": "Dutch",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t64_mtqukbp0",
+            "date": "",
+            "text": "German",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          }
+        ],
+        "sport": [
+          {
+            "id": "t69_mtqullt6",
+            "date": "",
+            "text": "Body Pump",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "subclusterId": ""
+          },
+          {
+            "id": "t74_mtt2enzy",
+            "date": "2026-09-10",
+            "text": "Tennis",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t66_mtqukm4d",
+            "date": "",
+            "text": "Reformer",
+            "status": "red",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t76_mtv5nmqm",
+            "date": "",
+            "text": "Cross Circle",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "design": [
+          {
+            "id": "t57_mtqujfz6",
+            "date": "",
+            "text": "Applications",
+            "status": "none",
+            "target": 10,
+            "starred": false,
+            "progress": 7,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t58_mtqujiuz",
+            "date": "",
+            "text": "Portfolio Update",
+            "status": "red",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t59_mtqujnen",
+            "date": "2026-09-11",
+            "text": "Startup project Claude",
+            "status": "yellow",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t73_mtt2c5gw",
+            "date": "2026-09-09",
+            "text": "2 Interviews",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "social": [
+          {
+            "id": "t60_mtqujxg8",
+            "date": "",
+            "text": "Carousels",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t61_mtqujzm5",
+            "date": "",
+            "text": "Vivacom Videos",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 2,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t62_mtquk41m",
+            "date": "2026-09-07",
+            "text": "AI Preparation",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t63_mtquk5rq",
+            "date": "2026-09-11",
+            "text": "Reel",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          }
+        ]
+      },
+      "monthId": "t20_mtg8wehx",
+      "autoCarried": true
+    },
+    "t23_mtg8wehx": {
+      "label": "Week 3",
+      "tasks": {
+        "apt": [
+          {
+            "id": "t88_mu0u2hjl",
+            "date": "",
+            "text": "Огледало",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t89_mu0u2mts",
+            "date": "2026-09-14",
+            "text": "Пердета",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "lang": [
+          {
+            "id": "t27_mtg8wmo5",
+            "date": "",
+            "text": "Dutch",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "carriedFrom": true,
+            "subclusterId": ""
+          },
+          {
+            "id": "t87_mu0u28gr",
+            "date": "",
+            "text": "German",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "sport": [
+          {
+            "id": "t82_mu0tz5vq",
+            "date": "2026-09-14",
+            "text": "Body Pump",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t84_mu0tzjm4",
+            "date": "",
+            "text": "Gym Bansko",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t83_mu0tzeib",
+            "date": "",
+            "text": "Tenis Vtornik",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ],
+        "design": [
+          {
+            "id": "t79_mu0tvdzz",
+            "date": "",
+            "text": "Applications",
+            "status": "none",
+            "target": 10,
+            "starred": false,
+            "progress": 5,
+            "carriedFrom": true,
+            "subclusterId": ""
+          }
+        ],
+        "social": [
+          {
+            "id": "t81_mu0txomp",
+            "date": "",
+            "text": "Ai handouts and project start",
+            "status": "none",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t85_mu0u12xo",
+            "date": "",
+            "text": "Carousel Publish",
+            "status": "green",
+            "target": 1,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t86_mu0u16uv",
+            "date": "",
+            "text": "Reel - WP",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          },
+          {
+            "id": "t90_mu12cnx2",
+            "date": "",
+            "text": "Orange",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 0,
+            "subclusterId": ""
+          }
+        ]
+      },
+      "monthId": "t20_mtg8wehx",
+      "autoCarried": true
+    },
+    "t24_mtg8wehx": {
+      "label": "Week 4",
+      "tasks": {
+        "apt": [],
+        "lang": [
+          {
+            "id": "t28_mtg8wn0k",
+            "date": "",
+            "text": "Dutch",
+            "status": "none",
+            "target": 2,
+            "starred": false,
+            "progress": 1,
+            "carriedFrom": true,
+            "subclusterId": ""
+          }
+        ],
+        "sport": [],
+        "design": [],
+        "social": []
+      },
+      "monthId": "t20_mtg8wehx",
+      "autoCarried": true
+    }
+  },
+  "months": [
+    {
+      "id": "m1",
+      "label": "August 2026",
+      "weekIds": [
+        "w1",
+        "w2",
+        "w3",
+        "w4"
+      ],
+      "quarterId": "q1"
+    },
+    {
+      "id": "t20_mtg8wehx",
+      "label": "September 2026",
+      "weekIds": [
+        "t21_mtg8wehx",
+        "t22_mtg8wehx",
+        "t23_mtg8wehx",
+        "t24_mtg8wehx"
+      ],
+      "quarterId": "q1"
+    }
+  ],
+  "backlog": {
+    "buy": [
+      {
+        "id": "t44_mtjrpa5v",
+        "url": "",
+        "done": false,
+        "text": "Neutrogena Ретинол"
+      },
+      {
+        "id": "t45_mtjrpi5c",
+        "url": "",
+        "done": false,
+        "text": "Омега 3 OstroVit"
+      }
+    ],
+    "ideas": [
+      {
+        "id": "t51_mtjxbxmm",
+        "url": "https://www.jobs.bg/job/8593693",
+        "done": false,
+        "text": "SoPharma"
+      },
+      {
+        "id": "t54_mtoe3edm",
+        "url": "https://jobs.ashbyhq.com/9fin/b4cff1ed-3608-46b6-bb1c-fdc136cd4e1f?utm_source=startupmap&utm_medium=referral",
+        "done": false,
+        "text": "9fin"
+      },
+      {
+        "id": "t55_mtoe3tnx",
+        "url": "https://ablefy.breezy.hr/p/5d3c8b47ccf601/apply?token=b240cc588201&source=Career%20Portal",
+        "done": false,
+        "text": "ablefy"
+      },
+      {
+        "id": "t56_mtoe41uz",
+        "url": "https://job-boards.eu.greenhouse.io/alma31/jobs/4962324101?utm_source=startupmap&utm_medium=referral",
+        "done": false,
+        "text": "alma"
+      },
+      {
+        "id": "t70_mtr7pdqj",
+        "url": "https://www.linkedin.com/jobs/view/4446099003/?alternateChannel=search&eBP=NOT_ELIGIBLE_FOR_CHARGING&refId=Rz1VIy1u41xTA6eTJBgYMQ%3D%3D&trackingId=%2FIP%2FY%2FkjMFnCd10Y4AfbvA%3D%3D",
+        "done": false,
+        "text": "zurich ins"
+      }
+    ]
+  },
+  "visions": [
+    {
+      "id": "v1",
+      "text": "Land a strategic / product design role at an agile B2B SaaS company, using the RepAIr case study to show research-to-shipped range. Freelance UX research and facilitation running alongside.",
+      "title": "Vision — Sep 2026"
+    },
+    {
+      "id": "v2",
+      "text": "Recognised as a strategic design voice in the repair and recommerce space — an established content practice, a DACH network, and either a high-leverage in-house seat or a thriving independent practice.",
+      "title": "Vision — Sep 2027"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "design",
+      "name": "Design",
+      "color": "#7F77DD",
+      "subclusters": []
+    },
+    {
+      "id": "social",
+      "name": "Social & facilitation",
+      "color": "#1D9E75",
+      "subclusters": []
+    },
+    {
+      "id": "lang",
+      "name": "Languages",
+      "color": "#D85A30",
+      "subclusters": []
+    },
+    {
+      "id": "sport",
+      "name": "Sport",
+      "color": "#378ADD",
+      "subclusters": []
+    },
+    {
+      "id": "apt",
+      "name": "Apartment",
+      "color": "#A97142",
+      "subclusters": []
+    }
+  ],
+  "dayOrder": {
+    "2026-08-28": [
+      "w:w4:design:t6_mtcr9gst"
+    ],
+    "2026-08-31": [
+      "w:t21_mtg8wehx:design:t30_mtg8xzim",
+      "w:t21_mtg8wehx:lang:t25_mtg8wehz",
+      "w:t21_mtg8wehx:apt:t38_mtg8zlxg",
+      "w:t21_mtg8wehx:sport:t36_mtg8zcoc",
+      "w:t21_mtg8wehx:social:t34_mtg8yzqo",
+      "w:t21_mtg8wehx:design:t31_mtg8y731"
+    ]
+  },
+  "dayTasks": {
+    "2026-08-23": [],
+    "2026-08-28": [],
+    "2026-09-02": [
+      {
+        "id": "t49_mtjx6f7v",
+        "text": "Бела/Ивайла 18",
+        "status": "none",
+        "target": 1,
+        "starred": false,
+        "progress": 0
+      },
+      {
+        "id": "t50_mtjx6hnf",
+        "text": "Барбер",
+        "status": "none",
+        "target": 1,
+        "starred": false,
+        "progress": 0
+      }
+    ],
+    "2026-09-12": [
+      {
+        "id": "t72_mtt2bnc5",
+        "text": "Irakli",
+        "status": "none",
+        "target": 1,
+        "starred": false,
+        "progress": 0
+      }
+    ]
+  },
+  "quarters": [
+    {
+      "id": "q1",
+      "label": "Q3 2026"
+    }
+  ],
+  "selected": {
+    "tab": "weekly",
+    "calDay": "2026-09-12",
+    "weekId": "t23_mtg8wehx",
+    "calYear": 2026,
+    "monthId": "t20_mtg8wehx",
+    "calMonth": 8,
+    "quarterId": "q1"
+  },
+  "quarterBridge": {
+    "q1": {
+      "apt": {
+        "goals": []
+      },
+      "lang": {
+        "goals": []
+      },
+      "sport": {
+        "goals": []
+      },
+      "design": {
+        "goals": []
+      },
+      "social": {
+        "goals": []
+      }
+    }
+  }
+}
